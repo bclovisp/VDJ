@@ -1,0 +1,16 @@
+{
+  "name": "VDJ: Vois, décide, joue",
+  "short_name": "VDJ",
+  "description": "Recognise football situations, then decide what to do",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E8F0E1",
+  "theme_color": "#E8F0E1",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
