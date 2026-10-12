@@ -99,7 +99,45 @@ svg.pitch{display:block;width:100%;height:auto;touch-action:manipulation;user-se
 .sheet p{margin:0}
 .row{display:flex;gap:10px;margin-top:14px}
 .row .big{flex:1}
-@media (prefers-reduced-motion: reduce){ .opt.locked::after,.nextbtn.locked::after{animation-duration:.01s} }
+/* football touches */
+.logo{display:inline-flex;align-items:center;gap:8px}
+.logo .ball{flex:none}
+.play{display:flex;align-items:center;justify-content:center;gap:12px}
+.play .ball{transition:transform .3s}
+.play:active .ball{transform:rotate(90deg)}
+.motto li span .ball{display:inline-block;vertical-align:middle}
+.bounce{animation:bounce 1.6s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-7px)}55%{transform:translateY(-7px) rotate(25deg)}}
+.score{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 12px}
+.sline{display:flex;align-items:center;gap:8px;font-size:1.1rem}
+.big-star{color:var(--goldt);font-size:1.5rem;line-height:1}
+.meter{height:10px;border-radius:5px;background:var(--none);overflow:hidden;margin:6px 0 4px}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,#FFD23F,#E7B416);border-radius:5px}
+.small{font-size:.88rem;color:var(--muted);margin:2px 0 0}
+h3.group{font-size:1rem;color:var(--muted);margin:16px 0 6px}
+.list{display:flex;flex-direction:column;gap:8px}
+.row-card{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-height:56px;cursor:pointer}
+.row-card .ic{font-size:1.45rem;width:1.8rem;text-align:center;flex:none}
+.row-card .nm{flex:1;font-weight:700;line-height:1.25}
+.row-card .st{flex:none;font-size:1.25rem;letter-spacing:1px;white-space:nowrap}
+.row-card .st em{font-style:normal;font-size:.85rem;color:var(--muted);letter-spacing:0}
+.row-card.soon{opacity:.55;cursor:default}
+.row-card.full{border-color:var(--goldt);box-shadow:inset 0 0 0 1px var(--goldt)}
+.on{color:var(--goldt)} .off{color:var(--none)}
+.stars-l{font-size:1.4rem;margin:-4px 0 8px}
+.msg.why{border-left:6px solid var(--bad)} .msg.ok{border-left:6px solid var(--good)}
+.burst{position:fixed;left:50%;top:55%;width:0;height:0;pointer-events:none;z-index:20}
+.burst span{position:absolute;left:-13px;top:-13px;animation:fly 1.1s ease-out forwards;opacity:0}
+@keyframes fly{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r))}}
+.win{text-align:center;position:relative;z-index:2;padding-top:10px}
+.win .trophy{font-size:5rem;line-height:1.1;animation:bounce 1.6s ease-in-out infinite}
+.win h1{font-size:1.6rem;margin:8px 0}
+.win p{font-size:1.15rem;margin:0 0 18px}
+.rain{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.rain span{position:absolute;top:-40px;animation:fall 3.2s linear infinite}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
+canvas.fw{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+@media (prefers-reduced-motion: reduce){ .opt.locked::after,.nextbtn.locked::after{animation-duration:.01s} .bounce,.win .trophy,.rain span{animation:none} }
 </style>
 </head>
 <body>
@@ -112,6 +150,9 @@ var SITS = ["gk","shadow","free","space","two1","shot","bunch","coming","freeopp
 var BUILT = {gk:1, two1:1, coming:1, onev1:1};
 /* one close lookalike (the key discrimination) + one that is wrong because of who has the ball */
 var DISTRACT = {gk:["coming","lost"], two1:["onev1","lost"], coming:["onev1","won"], onev1:["coming","gk"]};
+/* the three moments of the game, for the album */
+var GROUPS = [["have",["gk","shadow","free","space","two1","shot","bunch"]],["theirs",["coming","freeopp","squeeze","closest","onev1"]],["switch",["lost","won"]]];
+var STARS_AT = [1,3,6];   /* first-try recognitions needed for 1, 2 and 3 stars */
 var ICON = {gk:"🧤", shadow:"🌑", free:"🙋", space:"🛣️", two1:"✌️", shot:"🎯", bunch:"🐝", coming:"🚨", freeopp:"👀", squeeze:"🎈", closest:"🏃", onev1:"🥊", lost:"🔄", won:"⚡"};
 
 var PICS = [
@@ -171,83 +212,125 @@ var PICS = [
 var NB = "\u202F";
 var T = {
  en:{
-  tagline:"See, Decide, Play", play:"Play", album:"My album", home:"Home", next:"Next", cont:"Continue",
-  q1:"What's happening?", nameOk:"Yes! ", nameRetry:"Not quite. ", nameReveal:"It's this one: ",
-  good:"Good choice!", bad:"Not this time.", roundDone:"Round finished!",
-  score:function(n,t){ return "You named "+n+" of "+t+" situations on the first try."; },
-  again:"Play again", soon:"Coming soon", looks:"What it looks like", todo:"What to do", listen:"Listen", close:"Close",
+  play:"Play", album:"My album", home:"Home", next:"Next",
+  q1:"What is happening?", yes:"Yes! ", tryAgain:"Try again.", good:"Well done!", notThis:"Not this one.",
+  roundDone:"End of the round!", again:"Play again",
+  score:function(n,t){ return "You found "+n+" situations out of "+t+" on the first try."; },
+  mission:"In your next match, look for these situations:",
+  soon:"Coming soon", looks:"What you see", todo:"What you do", listen:"Listen", close:"Close",
   voiceOn:"Voice on", voiceOff:"Voice off", you:"You", keeper:"Keeper", ourGoal:"Our goal", theirGoal:"Their goal",
-  us:"Your team", them:"Other team", tapSpot:"Tap A, B or C on the pitch.", tier:["Not yet","Bronze","Silver","Gold"],
-  progress:function(n){ return n+(n===1?" time":" times")+" first try"; },
-  q:{gk:"Where do you go so the keeper can pass to you?", run:"Where do you run?", act:"What do you do?"},
-  opt:{pass:"Pass to your teammate", go:"Keep going and shoot", back:"Turn back", stay:"Stay on your feet", slide:"Slide for the ball", pounce:"Step in and take it"},
+  us:"Your team", them:"The other team", tapSpot:"Tap A, B or C on the pitch.",
+  starsTotal:function(n,t){ return n+" stars out of "+t; },
+  howStars:"You win a star each time you find a situation on the first try: 1 time, 3 times, then 6 times.",
+  group:{have:"We have the ball", theirs:"They have the ball", "switch":"The ball changes team"},
+  winTitle:"Well done! You finished the game!", winText:"You found every situation. You can read the game!", winBack:"Back to my album", trophy:"My trophy",
+  see:"See", decide:"Decide", playw:"Play",
+  q:{gk:"Where do you go to get the ball from your keeper?", run:"Where do you run?", act:"What do you do?"},
+  opt:{pass:"I pass to my teammate", go:"I keep the ball and I shoot", back:"I turn back", stay:"I stay on my feet", slide:"I slide for the ball", pounce:"I step in and I take the ball"},
   sit:{
-   gk:{name:"Keeper's ball", looks:"Our keeper has the ball in his hands or at his feet.", todo:"Spread out and get free, so he can pass to you.", hint:"Look at who has the ball."},
-   shadow:{name:"Hiding behind a red shirt"}, free:{name:"Free teammate"}, space:{name:"Space in front"},
-   two1:{name:"Two against one", looks:"You and a teammate against just one defender.", todo:"Watch the defender. He comes to you: pass. He goes to your teammate: keep going.", hint:"Count the players near the ball. How many of us, how many of them?"},
-   shot:{name:"Shooting chance"}, bunch:{name:"Everyone on the ball"},
-   coming:{name:"Coming at our goal", looks:"Their player with the ball runs at our goal, and you are far from him.", todo:"Run back between the ball and our goal.", hint:"Look where the red player with the ball is going, and how far away you are."},
-   freeopp:{name:"Free player near our goal"}, squeeze:{name:"Ball on the other side"}, closest:{name:"Their ball, you're closest"},
-   onev1:{name:"One against one", looks:"Their player with the ball is close to you, and it's just you and him.", todo:"Stay on your feet. Slide only when he's past you and you can reach the ball.", hint:"Look how close the red player with the ball is to you."},
-   lost:{name:"We just lost it"}, won:{name:"We just won it"}
+   gk:{name:"Our keeper has the ball", looks:"Our keeper holds the ball.", todo:"You move away from the red players. Then the keeper can pass to you.", hint:"Look: who has the ball?"},
+   shadow:{name:"A red player stands between you and the ball"}, free:{name:"A teammate is free"}, space:{name:"You have space in front of you"},
+   two1:{name:"Two of you attack one defender", looks:"You and a teammate attack. Only one defender is there.", todo:"You watch the defender. He comes to you: you pass. He goes to your teammate: you keep the ball.", hint:"Count the players near the ball. How many black players? How many red players?"},
+   shot:{name:"You can shoot"}, bunch:{name:"Everyone runs to the ball"},
+   coming:{name:"Their player runs at our goal. You are far away.", looks:"Their player has the ball. He runs at our goal. You are far from him.", todo:"You run back. You stand between the ball and our goal.", hint:"Look at the red player with the ball. Where does he run? Are you close to him?"},
+   freeopp:{name:"Their player is alone near our goal"}, squeeze:{name:"The ball is on the other side"}, closest:{name:"They have the ball and you are the closest"},
+   onev1:{name:"Their player runs at you with the ball", looks:"Their player has the ball. He is close to you. It is you against him.", todo:"You stay on your feet. You slide only when he is past you and you can reach the ball.", hint:"Look at the red player with the ball. Is he close to you?"},
+   lost:{name:"We just lost the ball"}, won:{name:"We just won the ball"}
+  },
+  whyName:{
+   gk:{coming:"Our keeper has the ball. Their player does not have it.", lost:"We have the ball: our keeper holds it."},
+   two1:{onev1:"Count again: two of you are near the ball, and only one defender.", lost:"You have the ball. Look at the ball at your feet."},
+   coming:{onev1:"Their player is far from you. He does not run at you.", won:"They have the ball: the red player has it."},
+   onev1:{coming:"Their player is not far from you. He is close to you.", gk:"Our keeper does not have the ball. The red player has it."}
+  },
+  whyDec:{
+   gk:{"wide|stay":"A red player stands between you and the keeper. The pass cannot reach you.", "wide|far":"A red player is on the way of this long pass. He can take the ball.",
+       "stay|behind":"Here a red player stands between you and the keeper. The pass cannot reach you.", "stay|far":"A red player is on the way of this long pass. He can take the ball."},
+   two1:{"pass|go":"The defender comes to you. If you keep the ball, he can take it.", "pass|back":"You run away from their goal. You miss your chance.",
+         "go|pass":"The defender is next to your teammate. He can take the pass.", "go|back":"You run away from their goal. You miss your chance."},
+   coming:{"home|chase":"You run behind him. You arrive too late to stop him.", "home|stay":"You stay far away. Nobody stops him on his way to our goal."},
+   onev1:{"stay|slide":"He still has the ball at his feet. If you slide, he goes around you.", "stay|pounce":"The ball is at his feet. If you jump in, he goes past you.",
+          "slide|stay":"He is already past you. If you only run, he gets to our goal first.", "slide|pounce":"He is past you. You cannot step in front of him now.",
+          "pounce|stay":"The ball is closer to you than to him. If you wait, he gets it back.", "pounce|slide":"The ball is close to you. You do not need to slide."}
   },
   ex:{
-   gk1:"You saw their striker standing between you and the keeper. Step wide, where nobody is in the way of the pass.",
-   gk2:"You saw a red shirt in the way of the pass. Go wide, where the keeper can see you.",
-   gk3:"You saw nobody between you and the keeper. You're already free: stay there and call for the ball.",
-   gk4:"You saw two strikers pressing, and you were hiding behind one of them. Go wide, near the side line, where the pass is free.",
-   t1:"You saw the defender come to you, so your teammate is free. Pass to him now.",
-   t2:"You saw the defender go to your teammate, so the road to goal is open. Keep going and shoot.",
-   t3:"You saw the defender step towards you. One defender can't stop two players: pass to your free teammate.",
-   t4:"You saw the defender guarding your teammate, so nobody is in front of you. Run at the goal and shoot.",
-   c1:"You saw their player running at our goal, with you behind him. Sprint back between the ball and our goal.",
-   c2:"You saw him heading for our goal while you were far away. Run back onto the line between the ball and our goal, then face him.",
-   c3:"You saw the ball going towards our goal. Chasing from behind is too slow: get between the ball and the goal first.",
-   c4:"You saw him running straight at our goal through the middle. Get in his way, between the ball and our goal.",
-   o1:"You saw him running at you with the ball close to his feet. Stay on your feet, sideways, and push him to the side.",
-   o2:"You saw he had gone past you and pushed the ball ahead. You can reach it from the side: slide for the ball.",
-   o3:"You saw his touch was too big: the ball is closer to you than to him. Step in and take it, staying on your feet.",
-   o4:"You saw him near the side line with the ball at his feet. Stay on your feet and keep him out wide, away from our goal."
+   gk1:"You saw a red player between you and the keeper. You moved to the side. Now nobody blocks the pass.",
+   gk2:"You saw a red player on the way of the pass. You went to the side. Now the keeper can see you.",
+   gk3:"You saw that nobody stands between you and the keeper. You are already free. You stay there and you call for the ball.",
+   gk4:"You saw two red players close to our keeper. You were behind one of them. You went wide, and now the pass is free.",
+   t1:"You saw the defender come to you. So your teammate is free. You pass to him.",
+   t2:"You saw the defender go to your teammate. So nobody is in front of you. You keep the ball and you shoot.",
+   t3:"You saw the defender step towards you. One defender cannot stop two players. You pass to your free teammate.",
+   t4:"You saw the defender stay with your teammate. So the way to the goal is open. You run with the ball and you shoot.",
+   c1:"You saw their player run at our goal. You were behind him. You ran back between the ball and our goal.",
+   c2:"You saw their player run at our goal. You were far away. You ran back between the ball and our goal. Now you can face him.",
+   c3:"You saw the ball go towards our goal. Running behind him is too slow. You went between the ball and our goal first.",
+   c4:"You saw their player run straight at our goal. You went in his way, between the ball and our goal.",
+   o1:"You saw him run at you with the ball at his feet. You stay on your feet. You stand sideways and you push him to the side.",
+   o2:"You saw that he was past you. He pushed the ball in front of him. You can reach the ball from the side, so you slide for the ball.",
+   o3:"You saw that his touch was too long. The ball is closer to you than to him. You step in and you take it. You stay on your feet.",
+   o4:"You saw him near the side line with the ball at his feet. You stay on your feet. You keep him on the side, far from our goal."
   }
  },
  fr:{
-  tagline:"Vois, décide, joue", play:"Jouer", album:"Mon album", home:"Accueil", next:"Suivant", cont:"Continuer",
-  q1:"Que se passe-t-il"+NB+"?", nameOk:"Oui"+NB+"! ", nameRetry:"Pas tout à fait. ", nameReveal:"C'est celle-ci"+NB+": ",
-  good:"Bien vu"+NB+"!", bad:"Pas cette fois.", roundDone:"Partie terminée"+NB+"!",
-  score:function(n,t){ return "Tu as reconnu "+n+" situations sur "+t+" du premier coup."; },
-  again:"Rejouer", soon:"Bientôt", looks:"À quoi ça ressemble", todo:"Que faire", listen:"Écouter", close:"Fermer",
+  play:"Jouer", album:"Mon album", home:"Accueil", next:"Suivant",
+  q1:"Que se passe-t-il"+NB+"?", yes:"Oui"+NB+"! ", tryAgain:"Essaie encore.", good:"Bravo"+NB+"!", notThis:"Pas celle-ci.",
+  roundDone:"Fin de la partie"+NB+"!", again:"Rejouer",
+  score:function(n,t){ return "Tu as trouvé "+n+" situations sur "+t+" du premier coup."; },
+  mission:"Dans ton prochain match, cherche ces situations"+NB+":",
+  soon:"Bientôt", looks:"Ce que tu vois", todo:"Ce que tu fais", listen:"Écouter", close:"Fermer",
   voiceOn:"Voix activée", voiceOff:"Voix coupée", you:"Toi", keeper:"Gardien", ourGoal:"Notre but", theirGoal:"Leur but",
-  us:"Ton équipe", them:"L'autre équipe", tapSpot:"Touche A, B ou C sur le terrain.", tier:["Pas encore","Bronze","Argent","Or"],
-  progress:function(n){ return n+" fois du premier coup"; },
-  q:{gk:"Où vas-tu pour que le gardien te fasse la passe"+NB+"?", run:"Où cours-tu"+NB+"?", act:"Que fais-tu"+NB+"?"},
-  opt:{pass:"Passer à ton coéquipier", go:"Continuer et tirer", back:"Faire demi-tour", stay:"Rester debout", slide:"Tacler en glissant", pounce:"Avancer et prendre le ballon"},
+  us:"Ton équipe", them:"L'autre équipe", tapSpot:"Touche A, B ou C sur le terrain.",
+  starsTotal:function(n,t){ return n+" étoiles sur "+t; },
+  howStars:"Tu gagnes une étoile chaque fois que tu trouves une situation du premier coup"+NB+": 1 fois, 3 fois, puis 6 fois.",
+  group:{have:"Nous avons le ballon", theirs:"Ils ont le ballon", "switch":"Le ballon change d'équipe"},
+  winTitle:"Bravo"+NB+"! Tu as fini le jeu"+NB+"!", winText:"Tu as trouvé toutes les situations. Tu sais lire le jeu"+NB+"!", winBack:"Retour à mon album", trophy:"Mon trophée",
+  see:"Vois", decide:"Décide", playw:"Joue",
+  q:{gk:"Où vas-tu pour recevoir le ballon du gardien"+NB+"?", run:"Où cours-tu"+NB+"?", act:"Que fais-tu"+NB+"?"},
+  opt:{pass:"Je passe à mon coéquipier", go:"Je garde le ballon et je tire", back:"Je fais demi-tour", stay:"Je reste debout", slide:"Je tacle en glissant", pounce:"J'avance et je prends le ballon"},
   sit:{
-   gk:{name:"Ballon au gardien", looks:"Notre gardien a le ballon dans les mains ou au pied.", todo:"Écarte-toi et démarque-toi pour qu'il puisse te passer le ballon.", hint:"Regarde qui a le ballon."},
-   shadow:{name:"Caché derrière un rouge"}, free:{name:"Coéquipier libre"}, space:{name:"Espace devant"},
-   two1:{name:"Deux contre un", looks:"Toi et un coéquipier contre un seul défenseur.", todo:"Regarde le défenseur. Il vient sur toi : passe. Il va vers ton coéquipier : continue.", hint:"Compte les joueurs près du ballon. Combien des nôtres, combien des leurs"+NB+"?"},
-   shot:{name:"Occasion de tir"}, bunch:{name:"Tous sur le ballon"},
-   coming:{name:"Ils foncent vers notre but", looks:"Leur joueur avec le ballon fonce vers notre but, et tu es loin de lui.", todo:"Reviens entre le ballon et notre but.", hint:"Regarde où va le joueur rouge avec le ballon, et à quelle distance tu es."},
-   freeopp:{name:"Joueur libre près de notre but"}, squeeze:{name:"Ballon de l'autre côté"}, closest:{name:"Leur ballon, tu es le plus près"},
-   onev1:{name:"Un contre un", looks:"Leur joueur avec le ballon est près de toi, et c'est toi contre lui.", todo:"Reste debout. Tacle seulement s'il t'a passé et que tu peux toucher le ballon.", hint:"Regarde à quelle distance de toi est le joueur rouge avec le ballon."},
-   lost:{name:"On vient de le perdre"}, won:{name:"On vient de le gagner"}
+   gk:{name:"Notre gardien a le ballon", looks:"Notre gardien tient le ballon.", todo:"Tu t'éloignes des joueurs rouges. Alors le gardien peut te passer le ballon.", hint:"Regarde"+NB+": qui a le ballon"+NB+"?"},
+   shadow:{name:"Un joueur rouge est entre toi et le ballon"}, free:{name:"Un coéquipier est libre"}, space:{name:"Tu as de l'espace devant toi"},
+   two1:{name:"Vous êtes deux contre un défenseur", looks:"Toi et un coéquipier attaquez. Il y a un seul défenseur.", todo:"Tu regardes le défenseur. Il vient sur toi"+NB+": tu passes. Il va vers ton coéquipier"+NB+": tu gardes le ballon.", hint:"Compte les joueurs près du ballon. Combien de noirs"+NB+"? Combien de rouges"+NB+"?"},
+   shot:{name:"Tu peux tirer"}, bunch:{name:"Tout le monde court au ballon"},
+   coming:{name:"Leur joueur fonce vers notre but. Tu es loin.", looks:"Leur joueur a le ballon. Il fonce vers notre but. Tu es loin de lui.", todo:"Tu reviens en courant. Tu te places entre le ballon et notre but.", hint:"Regarde le joueur rouge avec le ballon. Où court-il"+NB+"? Es-tu près de lui"+NB+"?"},
+   freeopp:{name:"Leur joueur est seul près de notre but"}, squeeze:{name:"Le ballon est de l'autre côté"}, closest:{name:"Ils ont le ballon et tu es le plus près"},
+   onev1:{name:"Leur joueur arrive sur toi avec le ballon", looks:"Leur joueur a le ballon. Il est près de toi. C'est toi contre lui.", todo:"Tu restes debout. Tu tacles seulement s'il t'a dépassé et que tu peux toucher le ballon.", hint:"Regarde le joueur rouge avec le ballon. Est-il près de toi"+NB+"?"},
+   lost:{name:"On vient de perdre le ballon"}, won:{name:"On vient de récupérer le ballon"}
+  },
+  whyName:{
+   gk:{coming:"Notre gardien a le ballon. Leur joueur ne l'a pas.", lost:"Nous avons le ballon"+NB+": notre gardien le tient."},
+   two1:{onev1:"Compte encore"+NB+": vous êtes deux près du ballon, et il y a un seul défenseur.", lost:"Tu as le ballon. Regarde le ballon à tes pieds."},
+   coming:{onev1:"Leur joueur est loin de toi. Il ne court pas sur toi.", won:"Ils ont le ballon"+NB+": le joueur rouge l'a."},
+   onev1:{coming:"Leur joueur n'est pas loin de toi. Il est tout près de toi.", gk:"Notre gardien n'a pas le ballon. Le joueur rouge l'a."}
+  },
+  whyDec:{
+   gk:{"wide|stay":"Un joueur rouge est entre toi et le gardien. La passe ne peut pas arriver.", "wide|far":"Un joueur rouge est sur le chemin de cette longue passe. Il peut prendre le ballon.",
+       "stay|behind":"Là, un joueur rouge est entre toi et le gardien. La passe ne peut pas arriver.", "stay|far":"Un joueur rouge est sur le chemin de cette longue passe. Il peut prendre le ballon."},
+   two1:{"pass|go":"Le défenseur vient sur toi. Si tu gardes le ballon, il peut te le prendre.", "pass|back":"Tu t'éloignes de leur but. Tu rates ta chance.",
+         "go|pass":"Le défenseur est à côté de ton coéquipier. Il peut prendre la passe.", "go|back":"Tu t'éloignes de leur but. Tu rates ta chance."},
+   coming:{"home|chase":"Tu cours derrière lui. Tu arrives trop tard pour l'arrêter.", "home|stay":"Tu restes loin. Personne ne l'arrête sur la route de notre but."},
+   onev1:{"stay|slide":"Il a encore le ballon au pied. Si tu tacles, il te contourne.", "stay|pounce":"Le ballon est collé à son pied. Si tu te jettes, il te passe.",
+          "slide|stay":"Il t'a déjà dépassé. Si tu cours seulement, il arrive le premier à notre but.", "slide|pounce":"Il t'a dépassé. Tu ne peux plus te mettre devant lui.",
+          "pounce|stay":"Le ballon est plus près de toi que de lui. Si tu attends, il le reprend.", "pounce|slide":"Le ballon est près de toi. Tu n'as pas besoin de tacler."}
   },
   ex:{
-   gk1:"Tu as vu leur attaquant entre toi et le gardien. Écarte-toi, là où personne ne bloque la passe.",
-   gk2:"Tu as vu un maillot rouge sur le chemin de la passe. Va sur le côté, là où le gardien te voit.",
-   gk3:"Tu as vu que personne n'est entre toi et le gardien. Tu es déjà libre"+NB+": reste là et appelle le ballon.",
-   gk4:"Tu as vu deux attaquants qui pressent, et tu étais caché derrière l'un d'eux. Va sur le côté, près de la ligne"+NB+": la passe est libre.",
-   t1:"Tu as vu le défenseur venir sur toi, donc ton coéquipier est libre. Passe-lui le ballon maintenant.",
-   t2:"Tu as vu le défenseur aller vers ton coéquipier, donc la route du but est libre. Continue et tire.",
-   t3:"Tu as vu le défenseur avancer vers toi. Un seul défenseur ne peut pas arrêter deux joueurs"+NB+": passe à ton coéquipier libre.",
-   t4:"Tu as vu le défenseur garder ton coéquipier, donc personne n'est devant toi. Fonce vers le but et tire.",
-   c1:"Tu as vu leur joueur foncer vers notre but, et toi derrière lui. Reviens vite entre le ballon et notre but.",
-   c2:"Tu as vu qu'il allait vers notre but alors que tu étais loin. Reviens sur la ligne entre le ballon et notre but, puis fais-lui face.",
-   c3:"Tu as vu le ballon aller vers notre but. Courir derrière lui, c'est trop lent"+NB+": place-toi d'abord entre le ballon et le but.",
-   c4:"Tu as vu qu'il fonce droit vers notre but, par le milieu. Mets-toi sur son chemin, entre le ballon et notre but.",
-   o1:"Tu as vu qu'il court vers toi avec le ballon collé au pied. Reste debout, de profil, et pousse-le sur le côté.",
-   o2:"Tu as vu qu'il t'avait passé et poussé le ballon devant lui. Tu peux l'atteindre de côté"+NB+": tacle en glissant sur le ballon.",
-   o3:"Tu as vu que sa touche était trop longue"+NB+": le ballon est plus près de toi que de lui. Avance et prends-le, en restant debout.",
-   o4:"Tu as vu qu'il est près de la ligne de touche avec le ballon au pied. Reste debout et garde-le sur le côté, loin de notre but."
+   gk1:"Tu as vu un joueur rouge entre toi et le gardien. Tu t'es écarté. Maintenant, personne ne bloque la passe.",
+   gk2:"Tu as vu un joueur rouge sur le chemin de la passe. Tu es allé sur le côté. Maintenant, le gardien te voit.",
+   gk3:"Tu as vu que personne n'est entre toi et le gardien. Tu es déjà libre. Tu restes là et tu appelles le ballon.",
+   gk4:"Tu as vu deux joueurs rouges près de notre gardien. Tu étais derrière l'un d'eux. Tu es allé sur le côté, et maintenant la passe est libre.",
+   t1:"Tu as vu le défenseur venir sur toi. Donc ton coéquipier est libre. Tu lui passes le ballon.",
+   t2:"Tu as vu le défenseur aller vers ton coéquipier. Donc personne n'est devant toi. Tu gardes le ballon et tu tires.",
+   t3:"Tu as vu le défenseur avancer vers toi. Un seul défenseur ne peut pas arrêter deux joueurs. Tu passes à ton coéquipier libre.",
+   t4:"Tu as vu le défenseur rester avec ton coéquipier. Donc le chemin du but est libre. Tu cours avec le ballon et tu tires.",
+   c1:"Tu as vu leur joueur foncer vers notre but. Tu étais derrière lui. Tu es revenu entre le ballon et notre but.",
+   c2:"Tu as vu leur joueur foncer vers notre but. Tu étais loin. Tu es revenu entre le ballon et notre but. Maintenant, tu peux lui faire face.",
+   c3:"Tu as vu le ballon aller vers notre but. Courir derrière lui, c'est trop lent. Tu t'es d'abord placé entre le ballon et notre but.",
+   c4:"Tu as vu leur joueur foncer tout droit vers notre but. Tu t'es mis sur son chemin, entre le ballon et notre but.",
+   o1:"Tu as vu qu'il arrive sur toi avec le ballon au pied. Tu restes debout. Tu te mets de profil et tu le pousses sur le côté.",
+   o2:"Tu as vu qu'il t'avait dépassé. Il a poussé le ballon devant lui. Tu peux toucher le ballon de côté, alors tu tacles le ballon.",
+   o3:"Tu as vu que sa touche était trop longue. Le ballon est plus près de toi que de lui. Tu avances et tu le prends. Tu restes debout.",
+   o4:"Tu as vu qu'il est près de la ligne de touche avec le ballon au pied. Tu restes debout. Tu le gardes sur le côté, loin de notre but."
   }
  }
 };
@@ -257,14 +340,13 @@ var T = {
 (function(){
 "use strict";
 var FAST = /[?&]fast=1/.test(location.search);
+var REDUCE = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 var W = 370, GOAL = [185,544];
 var KEY = "vdj:v1";
-var store = {lang:"fr", voice:true, counts:{}};
-try{ var raw=localStorage.getItem(KEY); if(raw){ var s0=JSON.parse(raw); if(s0){ store.lang = s0.lang==="en"?"en":"fr"; store.voice = s0.voice!==false; store.counts = s0.counts||{}; } } }catch(e){}
+var store = {lang:"fr", voice:true, counts:{}, won:false};
+try{ var raw=localStorage.getItem(KEY); if(raw){ var s0=JSON.parse(raw); if(s0){ store.lang=s0.lang==="en"?"en":"fr"; store.voice=s0.voice!==false; store.counts=s0.counts||{}; store.won=!!s0.won; } } }catch(e){}
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
 function t(){ return T[store.lang]; }
-var STEP = {en:{see:"See", decide:"Decide", play:"Play", mission:"In your next match, look for:"}, fr:{see:"Vois", decide:"Décide", play:"Joue", mission:"Pendant ton prochain match, cherche"+NB+":"}};
-function st(){ return STEP[store.lang]; }
 var app = document.getElementById("app");
 
 /* ---------- helpers ---------- */
@@ -286,7 +368,25 @@ function mirrorPic(p){
   if(c.dec.t==="btn") Object.keys(c.dec.out).forEach(function(k){ c.dec.out[k].forEach(function(a){ a[0]=W-a[0]; a[2]=W-a[2]; }); });
   c.mirrored=true; return c;
 }
-function tierOf(n){ return n>=10?3:(n>=5?2:(n>=2?1:0)); }
+function starsOf(n){ return n>=STARS_AT[2]?3:(n>=STARS_AT[1]?2:(n>=STARS_AT[0]?1:0)); }
+function totalStars(){ var s=0; SITS.forEach(function(k){ s+=starsOf(store.counts[k]||0); }); return s; }
+function allDone(){ return SITS.every(function(k){ return starsOf(store.counts[k]||0)===3; }); }
+function starRow(n){ var s=""; for(var i=0;i<3;i++) s+='<span class="'+(i<n?"on":"off")+'">★</span>'; return s; }
+
+/* a football, drawn once */
+var BALL = (function(){
+  var c=50, out='<circle cx="50" cy="50" r="46" fill="#fff" stroke="#15301F" stroke-width="3"/>';
+  function pent(cx,cy,r,rot){ var p=[]; for(var i=0;i<5;i++){ var a=(rot+72*i)*Math.PI/180; p.push((cx+r*Math.cos(a)).toFixed(1)+","+(cy+r*Math.sin(a)).toFixed(1)); } return p; }
+  var core=pent(c,c,15,-90);
+  out+='<polygon points="'+core.join(" ")+'" fill="#15301F"/>';
+  for(var k=0;k<5;k++){
+    var a=(-90+36+72*k)*Math.PI/180, px=c+40*Math.cos(a), py=c+40*Math.sin(a);
+    out+='<polygon points="'+pent(px,py,13,-90+36+72*k+180).join(" ")+'" fill="#15301F" clip-path="url(#bc)"/>';
+    var v=core[k].split(","), b=(-90+72*k)*Math.PI/180;
+    out+='<line x1="'+v[0]+'" y1="'+v[1]+'" x2="'+(c+31*Math.cos(b)).toFixed(1)+'" y2="'+(c+31*Math.sin(b)).toFixed(1)+'" stroke="#15301F" stroke-width="2.5"/>';
+  }
+  return function(size, cls){ return '<svg class="'+(cls||"ball")+'" width="'+size+'" height="'+size+'" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="bc"><circle cx="50" cy="50" r="45"/></clipPath></defs>'+out+'</svg>'; };
+})();
 
 /* ---------- voice ---------- */
 var voices=[];
@@ -300,13 +400,11 @@ function speak(text){
       var u=new SpeechSynthesisUtterance(String(text).replace(/\u202F/g," "));
       u.lang = store.lang==="fr" ? "fr-FR" : "en-GB";
       var lc=function(v){ return (v.lang||"").replace("_","-").toLowerCase(); };
-      var exact=voices.filter(function(v){ return lc(v)===u.lang.toLowerCase(); });
-      var near=voices.filter(function(v){ return lc(v).indexOf(u.lang.slice(0,2).toLowerCase())===0; });
+      var exact=voices.filter(function(v){ return lc(v)===u.lang.toLowerCase(); }), near=voices.filter(function(v){ return lc(v).indexOf(u.lang.slice(0,2).toLowerCase())===0; });
       if(exact[0]||near[0]) u.voice=exact[0]||near[0];
       u.rate=0.95;
       var done=false, fin=function(){ if(!done){ done=true; res(); } };
-      u.onend=fin; u.onerror=fin;
-      setTimeout(fin, 3000 + String(text).length*95);
+      u.onend=fin; u.onerror=fin; setTimeout(fin, 3000 + String(text).length*95);
       window.speechSynthesis.speak(u);
     }catch(e){ res(); }
   });
@@ -314,12 +412,9 @@ function speak(text){
 function stopSpeech(){ try{ if("speechSynthesis" in window) window.speechSynthesis.cancel(); }catch(e){} }
 function readMs(text){ var w=String(text).split(/\s+/).length; return Math.max(4000, Math.min(12000, w*450)); }
 
-/* ---------- round state ---------- */
+/* ---------- round ---------- */
 var screen="home", R=null;
-function buildRound(list){
-  R={items:list, i:0, res:[]};
-  screen="play"; startPic();
-}
+function buildRound(list){ R={items:list, i:0, res:[]}; screen="play"; startPic(); }
 function newRound(){
   var picks=PICS, ok=false, n=Math.min(6, PICS.length);
   for(var a=0; a<300 && !ok; a++){
@@ -334,44 +429,63 @@ function cur(){ return R.items[R.i]; }
 function startPic(){
   var p=cur(), letters=null;
   if(p.dec.t==="spot"){ letters={}; shuffle(Object.keys(p.dec.spots)).forEach(function(k,j){ letters[k]="ABC"[j]; }); }
-  R.s={step:"name", names:shuffle([p.sit].concat(DISTRACT[p.sit])), wrong:[], tries:0, firstTry:null, hint:false,
-       letters:letters, opts:p.dec.t==="btn"?shuffle(p.dec.opts):null, dec:null, decOk:null, msg:"", locked:false, lockMs:0};
+  R.s={step:"name", names:shuffle([p.sit].concat(DISTRACT[p.sit])), wrongNames:[], nameFirst:null, hint:false,
+       letters:letters, opts:p.dec.t==="btn"?shuffle(p.dec.opts):null, wrongDecs:[], lastWrong:null, decFirst:null,
+       msg:"", msgKind:"", locked:false, lockMs:0};
   lock(2500, speak(t().q1));
+  window.scrollTo(0,0);
 }
 function lock(ms, sp){
   var S=R.s; S.locked=true; S.lockMs=FAST?20:ms; render();
   Promise.all([wait(ms), sp||Promise.resolve()]).then(function(){ if(R && R.s===S){ S.locked=false; render(); } });
 }
 function pickName(k){
-  var S=R.s, p=cur(); if(!S || S.step!=="name" || S.locked || S.wrong.indexOf(k)>=0) return;
+  var S=R.s, p=cur(); if(!S || S.step!=="name" || S.locked || S.wrongNames.indexOf(k)>=0) return;
   var sit=t().sit[p.sit];
   if(k===p.sit){
-    if(S.firstTry===null) S.firstTry = (S.tries===0);
-    S.step="named"; S.msg=t().nameOk+sit.name+". "+sit.looks; render();
-    Promise.all([wait(2200), speak(S.msg)]).then(function(){ if(R && R.s===S) toDecide(); });
+    S.nameFirst = S.wrongNames.length===0;
+    S.step="named"; S.msg=t().yes+sit.name+". "+sit.looks; S.msgKind="ok"; render(); celebrate();
+    Promise.all([wait(2400), speak(S.msg)]).then(function(){ if(R && R.s===S) toDecide(); });
   } else {
-    S.tries++; S.wrong.push(k);
-    if(S.tries===1){ S.hint=true; S.msg=t().nameRetry+sit.hint; lock(1500, speak(S.msg)); }
-    else { S.firstTry=false; S.step="revealed"; S.msg=t().nameReveal+sit.name+". "+sit.looks; lock(2500, speak(S.msg)); }
+    S.wrongNames.push(k); S.hint=true;
+    S.msg=t().whyName[p.sit][k]+" "+t().tryAgain; S.msgKind="why";
+    lock(1500, speak(S.msg));
   }
 }
 function toDecide(){
-  var S=R.s, p=cur(); if(!S || (S.step!=="named" && S.step!=="revealed") || S.locked) return;
-  S.step="decide"; S.msg=""; lock(2000, speak(t().q[p.dec.q]));
+  var S=R.s, p=cur(); if(!S || S.step!=="named") return;
+  S.step="decide"; S.msg=""; S.msgKind=""; lock(2000, speak(t().q[p.dec.q]));
 }
 function pickDec(k){
-  var S=R.s, p=cur(); if(!S || S.step!=="decide" || S.locked) return;
-  S.dec=k; S.decOk=(k===p.dec.ok); S.step="result";
-  var ex=t().ex[p.id];
-  lock(readMs(ex), speak((S.decOk?t().good:t().bad)+" "+ex));
+  var S=R.s, p=cur(); if(!S || S.step!=="decide" || S.locked || S.wrongDecs.indexOf(k)>=0) return;
+  if(k===p.dec.ok){
+    S.decFirst = S.wrongDecs.length===0; S.step="result"; S.lastWrong=null;
+    var ex=t().ex[p.id]; S.msg=ex; S.msgKind="ok"; celebrate();
+    lock(readMs(ex), speak(t().good+" "+ex));
+  } else {
+    S.wrongDecs.push(k); S.lastWrong=k;
+    S.msg=t().whyDec[p.sit][p.dec.ok+"|"+k]+" "+t().tryAgain; S.msgKind="why";
+    lock(1800, speak(S.msg));
+  }
 }
 function nextPic(){
   var S=R.s, p=cur(); if(!S || S.step!=="result" || S.locked) return;
   stopSpeech();
-  R.res.push({sit:p.sit, id:p.id, name:S.firstTry===true, dec:S.decOk===true});
-  if(S.firstTry===true){ store.counts[p.sit]=(store.counts[p.sit]||0)+1; save(); }
+  R.res.push({sit:p.sit, id:p.id, name:S.nameFirst===true, dec:S.decFirst===true});
+  if(S.nameFirst===true){ store.counts[p.sit]=(store.counts[p.sit]||0)+1; save(); }
   R.i++;
-  if(R.i>=R.items.length){ screen="end"; R.s=null; render(); } else startPic();
+  if(R.i<R.items.length){ startPic(); return; }
+  R.s=null;
+  if(allDone() && !store.won){ store.won=true; save(); screen="win"; } else screen="end";
+  render(); window.scrollTo(0,0);
+}
+
+/* ---------- little celebration: footballs fly up ---------- */
+function celebrate(){
+  if(REDUCE || FAST) return;
+  var layer=h("div",{"class":"burst","aria-hidden":"true"});
+  for(var i=0;i<7;i++){ layer.appendChild(h("span",{style:"--dx:"+(Math.random()*240-120).toFixed(0)+"px;--dy:"+(-140-Math.random()*120).toFixed(0)+"px;--r:"+(Math.random()*540-270).toFixed(0)+"deg;animation-delay:"+(i*40)+"ms"}, BALL(26,"bb"))); }
+  document.body.appendChild(layer); setTimeout(function(){ layer.remove(); }, 1500);
 }
 
 /* ---------- pitch drawing ---------- */
@@ -389,13 +503,25 @@ function cross(g, q){
   var s=6, d="M"+(q[0]-s)+" "+(q[1]-s)+"L"+(q[0]+s)+" "+(q[1]+s)+"M"+(q[0]+s)+" "+(q[1]-s)+"L"+(q[0]-s)+" "+(q[1]+s);
   el("path",{d:d,stroke:"#15301F","stroke-width":7,"stroke-linecap":"round"},g); el("path",{d:d,stroke:"#fff","stroke-width":3.5,"stroke-linecap":"round"},g);
 }
-function label(g, x, y, text, anchor){
-  var tx=el("text",{x:x,y:y,"text-anchor":anchor||"start","font-size":"12","font-weight":"700",fill:"#fff",stroke:"rgba(0,0,0,.4)","stroke-width":"3","paint-order":"stroke"},g); tx.textContent=text; return tx;
-}
-function blockerOf(p, to){
-  var best=null;
-  p.them.forEach(function(o){ if(dist(o,p.ball)<14) return; var s=seg(p.ball,to,o); if(s.d<18 && (!best || s.u<best.u)) best={q:s.q, u:s.u, o:o}; });
-  return best;
+function label(g, x, y, text, anchor){ var tx=el("text",{x:x,y:y,"text-anchor":anchor||"start","font-size":"12","font-weight":"700",fill:"#fff",stroke:"rgba(0,0,0,.4)","stroke-width":"3","paint-order":"stroke"},g); tx.textContent=text; return tx; }
+function blockerOf(p, to){ var best=null; p.them.forEach(function(o){ if(dist(o,p.ball)<14) return; var s=seg(p.ball,to,o); if(s.d<18 && (!best || s.u<best.u)) best={q:s.q, u:s.u}; }); return best; }
+
+/* what happens for option k: good = yellow, bad = red. A wrong try never shows the right answer. */
+function drawOutcome(over, marks, p, k, good){
+  if(p.dec.t==="spot"){
+    var ch=p.dec.spots[k];
+    if(dist(p.m,ch)>14) arrow(over,[p.m[0],p.m[1],ch[0],ch[1]],"k","full",true);
+    if(p.dec.out==="pass"){
+      var b=blockerOf(p,ch);
+      arrow(over,[p.ball[0],p.ball[1],ch[0],ch[1]], b?"x":"y","full", !!b);
+      if(b) cross(marks,b.q);
+    } else {
+      el("line",{x1:p.ball[0],y1:p.ball[1],x2:GOAL[0],y2:GOAL[1],stroke:"#FF4D3D","stroke-width":4,"stroke-dasharray":"8 7","stroke-linecap":"round",opacity:".95"},over);
+    }
+    el("circle",{cx:ch[0],cy:ch[1],r:20,fill:"none",stroke:good?"#FFE45C":"#FF4D3D","stroke-width":3.5},marks);
+  } else {
+    p.dec.out[k].forEach(function(a){ arrow(over,a,good?"y":"x","full"); });
+  }
 }
 function drawPitch(p, S, interactive){
   var y0=p.y0, svg=el("svg",{viewBox:"0 "+y0+" 370 300","class":"pitch",role:"img"});
@@ -409,42 +535,21 @@ function drawPitch(p, S, interactive){
   if(y0<=10) label(svg, 212, 21, t().theirGoal);
   if(y0+300>=540) label(svg, 212, 539, t().ourGoal);
 
-  var step=S?S.step:"named", res=step==="result", over=el("g",{},svg);
-  var mpos=p.m.slice();
-  if(res && p.dec.t==="spot") mpos=p.dec.spots[S.dec].slice();
+  var step=S?S.step:"named", res=step==="result", over=el("g",{},svg), marks=el("g",{});
+  var mpos=p.m.slice(); if(res && p.dec.t==="spot") mpos=p.dec.spots[p.dec.ok].slice();
+  if(res) drawOutcome(over, marks, p, p.dec.ok, true);
+  else if(step==="decide" && S.lastWrong) drawOutcome(over, marks, p, S.lastWrong, false);
 
-  /* outcome under the players */
-  if(res){
-    if(p.dec.t==="spot"){
-      var okAt=p.dec.spots[p.dec.ok], ch=p.dec.spots[S.dec];
-      if(dist(p.m,ch)>14) arrow(over,[p.m[0],p.m[1],ch[0],ch[1]],"k","full",true);
-      if(p.dec.out==="pass"){
-        var b=blockerOf(p,ch);
-        if(b){ arrow(over,[p.ball[0],p.ball[1],ch[0],ch[1]],"x","full",true); }
-        else arrow(over,[p.ball[0],p.ball[1],ch[0],ch[1]],"y","full");
-        if(!S.decOk) arrow(over,[p.ball[0],p.ball[1],okAt[0],okAt[1]],"y","full",true);
-        S._block=b;
-      } else {
-        el("line",{x1:p.ball[0],y1:p.ball[1],x2:GOAL[0],y2:GOAL[1],stroke:"#FF4D3D","stroke-width":4,"stroke-dasharray":"8 7","stroke-linecap":"round",opacity:".95"},over);
-      }
-    } else {
-      p.dec.out[S.dec].forEach(function(a){ arrow(over,a,S.decOk?"y":"x","full"); });
-      if(!S.decOk) p.dec.out[p.dec.ok].forEach(function(a){ arrow(over,a,"y","full",true); });
-    }
-  }
-  /* movement arrows that are part of the situation */
   var qa=el("g",{},svg);
   (p.arrows||[]).forEach(function(a){ var c=a[4]; if(res && (c==="k"||c==="K")) return; arrow(qa,a,c,(c==="b"||c==="R"||c==="K")?"full":"run"); });
 
-  /* answer spots */
   var spotG=el("g",{},svg), badges=[], showSpots=p.dec.t==="spot" && (step==="decide"||res);
   if(showSpots) Object.keys(p.dec.spots).forEach(function(k){
-    var q=p.dec.spots[k], onMax=dist(q,p.m)<14, cls=res?(k===S.dec?1:0.45):1;
-    el("circle",{cx:q[0],cy:q[1],r:onMax?26:16,fill:"rgba(255,255,255,.16)",stroke:"#fff","stroke-width":2.5,"stroke-dasharray":"6 5",opacity:cls},spotG);
-    badges.push({k:k,q:q,onMax:onMax,op:cls});
+    var q=p.dec.spots[k], onMax=dist(q,p.m)<14, wrong=S.wrongDecs.indexOf(k)>=0, op=res?(k===p.dec.ok?1:0.4):1;
+    el("circle",{cx:q[0],cy:q[1],r:onMax?26:16,fill:wrong?"rgba(255,77,61,.18)":"rgba(255,255,255,.16)",stroke:wrong?"#FF4D3D":"#fff","stroke-width":2.5,"stroke-dasharray":"6 5",opacity:op},spotG);
+    badges.push({k:k,q:q,onMax:onMax,op:op,wrong:wrong});
   });
 
-  /* players */
   var pg=el("g",{},svg);
   function body(q, fill){ el("circle",{cx:q[0],cy:q[1],r:11,fill:fill,stroke:"#fff","stroke-width":3},pg); }
   p.us.forEach(function(q){ body(q,"#000"); if(q[2]) label(pg, q[0]<70?q[0]+17:q[0]-17, q[1]+4.5, t().keeper, q[0]<70?"start":"end"); });
@@ -452,27 +557,17 @@ function drawPitch(p, S, interactive){
   var mg=el("g",{transform:"translate("+mpos[0]+" "+mpos[1]+")"},pg);
   el("circle",{r:16,fill:"none",stroke:"#FFD23F","stroke-width":3.5},mg);
   el("circle",{r:11,fill:"#000",stroke:"#fff","stroke-width":3},mg);
-  /* ball (follows the outcome a little for clarity) */
-  var bpos=p.ball.slice();
-  el("circle",{cx:bpos[0],cy:bpos[1],r:6.5,fill:"#fff",stroke:"#1b1b1b","stroke-width":1.6},svg);
-  el("circle",{cx:bpos[0],cy:bpos[1],r:2.1,fill:"#1b1b1b"},svg);
+  el("circle",{cx:p.ball[0],cy:p.ball[1],r:6.5,fill:"#fff",stroke:"#1b1b1b","stroke-width":1.6},svg);
+  el("circle",{cx:p.ball[0],cy:p.ball[1],r:2.1,fill:"#1b1b1b"},svg);
 
-  /* clue rings: after naming, or as the hint after a wrong name */
-  if(S && (S.hint || step!=="name") && step!=="decide" && step!=="result" || (!S)){
-    (p.clue||[]).forEach(function(q){ el("circle",{cx:q[0],cy:q[1],r:21,fill:"none",stroke:"#FFE45C","stroke-width":3,"stroke-dasharray":"5 4","class":"cluering"},svg); });
-  }
-  if(res && p.dec.t==="spot"){
-    var okq=p.dec.spots[p.dec.ok];
-    el("circle",{cx:okq[0],cy:okq[1],r:20,fill:"none",stroke:"#FFE45C","stroke-width":3.5},svg);
-    if(S._block) cross(svg, S._block.q);
-  }
-  /* letter badges above everything */
+  /* yellow rings show where to look: after a wrong name, once named, and in the album */
+  if(!S || S.hint || step==="named") (p.clue||[]).forEach(function(q){ el("circle",{cx:q[0],cy:q[1],r:21,fill:"none",stroke:"#FFE45C","stroke-width":3,"stroke-dasharray":"5 4"},svg); });
+  svg.appendChild(marks);
   badges.forEach(function(b){
     var bx=b.onMax?(b.q[0]-31<14?b.q[0]+31:b.q[0]-31):b.q[0]+12, by=b.onMax?b.q[1]:b.q[1]-12, gg=el("g",{opacity:b.op},svg);
-    el("circle",{cx:bx,cy:by,r:10,fill:"#15301F",stroke:"#fff","stroke-width":1.5},gg);
-    var tx=el("text",{x:bx,y:by+4.4,"text-anchor":"middle","font-size":"13","font-weight":"700",fill:"#FFD23F"},gg); tx.textContent=S.letters[b.k];
+    el("circle",{cx:bx,cy:by,r:10,fill:b.wrong?"#CF3A26":"#15301F",stroke:"#fff","stroke-width":1.5},gg);
+    var tx=el("text",{x:bx,y:by+4.4,"text-anchor":"middle","font-size":"13","font-weight":"700",fill:b.wrong?"#fff":"#FFD23F"},gg); tx.textContent=S.letters[b.k];
   });
-  /* "You" tag, placed where nothing else is */
   var others=p.us.concat(p.them).map(function(q){ return [q[0],q[1]]; }); others.push(p.ball);
   badges.forEach(function(b){ if(!b.onMax){ others.push(b.q); others.push([b.q[0]+12,b.q[1]-12]); } });
   (p.arrows||[]).forEach(function(a){ var d=dist([a[0],a[1]],[a[2],a[3]])||1; for(var f=14; f<=Math.min(50,d); f+=9) others.push([a[0]+(a[2]-a[0])/d*f, a[1]+(a[3]-a[1])/d*f]); });
@@ -484,8 +579,8 @@ function drawPitch(p, S, interactive){
   cands.forEach(function(c){ if(!pick && fits(c) && free(c)) pick=c; }); cands.forEach(function(c){ if(!pick && fits(c)) pick=c; }); pick=pick||cands[0];
   tr.setAttribute("x",pick[0]); tr.setAttribute("y",pick[1]); tr.setAttribute("width",w); tt.setAttribute("x",pick[0]+w/2); tt.setAttribute("y",pick[1]+13.5);
 
-  /* tap targets for spots */
   if(interactive && p.dec.t==="spot" && step==="decide") Object.keys(p.dec.spots).forEach(function(k){
+    if(S.wrongDecs.indexOf(k)>=0) return;
     var q=p.dec.spots[k], c=el("circle",{cx:q[0],cy:q[1],r:26,fill:"transparent","pointer-events":"all","data-spot":k,style:S.locked?"":"cursor:pointer"},svg);
     c.addEventListener("click", function(){ pickDec(k); });
   });
@@ -495,54 +590,60 @@ function drawPitch(p, S, interactive){
 /* ---------- screens ---------- */
 function header(){
   var top=h("header",{"class":"top"});
-  top.appendChild(h("button",{"class":"logo",onclick:goHome,"aria-label":t().home},"VDJ"));
-  top.appendChild(h("button",{"class":"pill",onclick:function(){ store.voice=!store.voice; save(); if(!store.voice) stopSpeech(); render(); },"aria-label":store.voice?t().voiceOn:t().voiceOff, title:store.voice?t().voiceOn:t().voiceOff}, store.voice?"🔊":"🔇"));
+  top.appendChild(h("button",{"class":"logo",onclick:goHome,"aria-label":t().home}, BALL(26)+"<span>VDJ</span>"));
+  top.appendChild(h("button",{"class":"pill",onclick:function(){ store.voice=!store.voice; save(); if(!store.voice) stopSpeech(); render(); },"aria-label":store.voice?t().voiceOn:t().voiceOff,title:store.voice?t().voiceOn:t().voiceOff}, store.voice?"🔊":"🔇"));
   var lg=h("div",{"class":"lang",role:"group","aria-label":"Language"});
-  ["en","fr"].forEach(function(l){ lg.appendChild(h("button",{"aria-pressed":String(store.lang===l),onclick:function(){ store.lang=l; save(); stopSpeech(); document.documentElement.lang=l; render(); }}, l.toUpperCase())); });
+  ["en","fr"].forEach(function(l){ lg.appendChild(h("button",{"aria-pressed":String(store.lang===l),onclick:function(){ store.lang=l; save(); stopSpeech(); render(); }}, l.toUpperCase())); });
   top.appendChild(lg); return top;
 }
-function goHome(){ stopSpeech(); screen="home"; R=null; render(); window.scrollTo(0,0); }
+function goHome(){ stopSpeech(); stopFireworks(); screen="home"; R=null; render(); window.scrollTo(0,0); }
 function legend(){ return h("p",{"class":"legend"},'<span><i style="background:#000"></i>'+esc(t().us)+'</span><span><i style="background:#E53935"></i>'+esc(t().them)+'</span>'); }
 
 function renderHome(){
   var hero=h("section",{"class":"hero"});
-  hero.appendChild(h("ul",{"class":"motto","aria-label":t().tagline},"<li><span>👀</span>"+esc(st().see)+"</li><li><span>🤔</span>"+esc(st().decide)+"</li><li><span>⚽</span>"+esc(st().play)+"</li>"));
-  hero.appendChild(h("button",{"class":"big",id:"playBtn",onclick:newRound}, esc(t().play)));
+  hero.appendChild(h("ul",{"class":"motto","aria-label":t().see+", "+t().decide+", "+t().playw},"<li><span>👀</span>"+esc(t().see)+"</li><li><span>🤔</span>"+esc(t().decide)+"</li><li><span>"+BALL(30,"ball bounce")+"</span>"+esc(t().playw)+"</li>"));
+  var n=totalStars(), max=SITS.length*3;
+  hero.appendChild(h("div",{"class":"score"},'<div class="sline"><span class="big-star">★</span><b>'+esc(t().starsTotal(n,max))+'</b></div><div class="meter"><i style="width:'+(100*n/max).toFixed(1)+'%"></i></div><p class="small">'+esc(t().howStars)+'</p>'));
+  hero.appendChild(h("button",{"class":"big play",id:"playBtn",onclick:newRound}, BALL(28)+"<span>"+esc(t().play)+"</span>"));
+  if(store.won) hero.appendChild(h("button",{"class":"big ghost",style:"margin-top:10px",onclick:function(){ screen="win"; render(); }},"🏆 "+esc(t().trophy)));
   app.appendChild(hero);
   app.appendChild(h("h2",{},esc(t().album)));
-  var grid=h("div",{"class":"grid"});
-  SITS.forEach(function(k){
-    var built=!!BUILT[k], n=store.counts[k]||0, tier=tierOf(n);
-    var c=h("button",{"class":"card"+(built?" t"+tier:" soon"),"data-sit":k},
-      '<span class="ic">'+ICON[k]+'</span><span class="nm">'+esc(t().sit[k].name)+'</span><span class="tr">'+esc(built?t().tier[tier]:t().soon)+'</span>');
-    if(built) c.addEventListener("click", function(){ openDetail(k); }); else c.setAttribute("disabled","");
-    grid.appendChild(c);
+  GROUPS.forEach(function(gr){
+    app.appendChild(h("h3",{"class":"group"},esc(t().group[gr[0]])));
+    var list=h("div",{"class":"list"});
+    gr[1].forEach(function(k){
+      var built=!!BUILT[k], st=starsOf(store.counts[k]||0);
+      var c=h("button",{"class":"row-card"+(built?"":" soon")+(st===3?" full":""),"data-sit":k},
+        '<span class="ic">'+ICON[k]+'</span><span class="nm">'+esc(t().sit[k].name)+'</span><span class="st">'+(built?starRow(st):'<em>'+esc(t().soon)+'</em>')+'</span>');
+      if(built) c.addEventListener("click", function(){ openDetail(k); }); else c.setAttribute("disabled","");
+      list.appendChild(c);
+    });
+    app.appendChild(list);
   });
-  app.appendChild(grid);
 }
 function openDetail(k){
   var p=PICS.filter(function(q){ return q.sit===k; })[0], s=t().sit[k], n=store.counts[k]||0;
   var ov=h("div",{"class":"detail",onclick:function(e){ if(e.target===ov){ stopSpeech(); ov.remove(); } }});
   var sh=h("div",{"class":"sheet",role:"dialog","aria-modal":"true"});
   sh.appendChild(h("h3",{},ICON[k]+" "+esc(s.name)));
+  sh.appendChild(h("p",{"class":"stars-l"},starRow(starsOf(n))));
   var pw=h("div",{"class":"pitch-wrap"}); pw.appendChild(drawPitch(p,null,false)); sh.appendChild(pw);
   sh.appendChild(h("h4",{},esc(t().looks))); sh.appendChild(h("p",{},esc(s.looks)));
   sh.appendChild(h("h4",{},esc(t().todo))); sh.appendChild(h("p",{},esc(s.todo)));
-  sh.appendChild(h("p",{"class":"hint"},esc(t().tier[tierOf(n)])+". "+esc(t().progress(n))+"."));
   var row=h("div",{"class":"row"});
   row.appendChild(h("button",{"class":"big ghost",onclick:function(){ speak(s.name+". "+s.looks+" "+s.todo); }},"🔊 "+esc(t().listen)));
   row.appendChild(h("button",{"class":"big",onclick:function(){ stopSpeech(); ov.remove(); }},esc(t().close)));
   sh.appendChild(row); ov.appendChild(sh); document.body.appendChild(ov);
 }
 function renderPlay(){
-  var S=R.s, p=cur(), sit=t().sit[p.sit];
+  var S=R.s, p=cur();
   var bar=h("div",{"class":"bar"});
   bar.appendChild(h("button",{"class":"back",onclick:goHome},"‹ "+esc(t().home)));
   var dots=h("div",{"class":"dots","aria-hidden":"true"});
   R.items.forEach(function(_,i){ var r=R.res[i]; dots.appendChild(h("i",{"class":i===R.i?"now":(r?(r.name&&r.dec?"ok":"no"):"")})); });
   bar.appendChild(dots); app.appendChild(bar);
   var deciding = S.step==="decide"||S.step==="result";
-  app.appendChild(h("span",{"class":"step"}, deciding ? "🤔 "+esc(st().decide) : "👀 "+esc(st().see)));
+  app.appendChild(h("span",{"class":"step"}, deciding ? "🤔 "+esc(t().decide) : "👀 "+esc(t().see)));
   app.appendChild(h("h1",{"class":"q",id:"q"}, esc(deciding ? t().q[p.dec.q] : t().q1)));
   var pw=h("div",{"class":"pitch-wrap"}); pw.appendChild(drawPitch(p,S,true)); app.appendChild(pw);
   app.appendChild(legend());
@@ -550,17 +651,18 @@ function renderPlay(){
   if(!deciding){
     S.names.forEach(function(k){
       var cls="opt", dis=S.locked||S.step!=="name";
-      if(S.wrong.indexOf(k)>=0){ cls+=" wrong"; dis=true; }
-      if((S.step==="named"||S.step==="revealed") && k===p.sit) cls+=" right";
-      if(S.locked && S.step==="name") cls+=" locked";
+      if(S.wrongNames.indexOf(k)>=0){ cls+=" wrong"; dis=true; }
+      if(S.step==="named" && k===p.sit) cls+=" right";
+      if(S.locked && S.step==="name" && S.wrongNames.indexOf(k)<0) cls+=" locked";
       var b=h("button",{"class":cls,"data-name":k,style:"--lock:"+S.lockMs+"ms",onclick:function(){ pickName(k); }},'<span class="ic">'+ICON[k]+'</span><span>'+esc(t().sit[k].name)+'</span>');
       if(dis) b.setAttribute("disabled",""); ans.appendChild(b);
     });
   } else if(p.dec.t==="btn"){
     S.opts.forEach(function(k){
       var cls="opt", dis=S.locked||S.step!=="decide";
-      if(S.step==="result"){ if(k===p.dec.ok) cls+=" right"; else if(k===S.dec) cls+=" wrong"; }
-      if(S.locked && S.step==="decide") cls+=" locked";
+      if(S.wrongDecs.indexOf(k)>=0){ cls+=" wrong"; dis=true; }
+      if(S.step==="result" && k===p.dec.ok) cls+=" right";
+      if(S.locked && S.step==="decide" && S.wrongDecs.indexOf(k)<0) cls+=" locked";
       var b=h("button",{"class":cls,"data-opt":k,style:"--lock:"+S.lockMs+"ms",onclick:function(){ pickDec(k); }},'<span>'+esc(t().opt[k])+'</span>');
       if(dis) b.setAttribute("disabled",""); ans.appendChild(b);
     });
@@ -568,17 +670,13 @@ function renderPlay(){
     ans.appendChild(h("p",{"class":"hint"}, esc(t().tapSpot)));
   }
   app.appendChild(ans);
-  if(S.msg && !deciding){
-    var m=h("div",{"class":"msg","aria-live":"polite"}); m.appendChild(h("p",{"class":"look"},esc(S.msg))); app.appendChild(m);
-  }
-  if(S.step==="revealed"){
-    var cb=h("button",{"class":"big nextbtn"+(S.locked?" locked":""),style:"--lock:"+S.lockMs+"ms",id:"contBtn",onclick:toDecide},esc(t().cont));
-    if(S.locked) cb.setAttribute("disabled",""); app.appendChild(cb);
+  if(S.msg){
+    var m=h("div",{"class":"msg "+S.msgKind,"aria-live":"polite"});
+    if(S.step==="result") m.appendChild(h("p",{"class":"v good"},"✅ "+esc(t().good)));
+    if(S.msgKind==="why") m.appendChild(h("p",{"class":"v bad"},"✋ "+esc(t().notThis)));
+    m.appendChild(h("p",{},esc(S.msg))); app.appendChild(m);
   }
   if(S.step==="result"){
-    var mm=h("div",{"class":"msg","aria-live":"polite"});
-    mm.appendChild(h("p",{"class":"v "+(S.decOk?"good":"bad")},(S.decOk?"✅ ":"✋ ")+esc(S.decOk?t().good:t().bad)));
-    mm.appendChild(h("p",{},esc(t().ex[p.id]))); app.appendChild(mm);
     var nb=h("button",{"class":"big nextbtn"+(S.locked?" locked":""),style:"--lock:"+S.lockMs+"ms",id:"nextBtn",onclick:nextPic},esc(t().next));
     if(S.locked) nb.setAttribute("disabled",""); app.appendChild(nb);
   }
@@ -587,20 +685,54 @@ function renderEnd(){
   var n=R.res.filter(function(r){ return r.name; }).length, box=h("section",{"class":"end"});
   box.appendChild(h("h1",{},"🏁 "+esc(t().roundDone)));
   box.appendChild(h("p",{},esc(t().score(n,R.res.length))));
-  var ul=h("ul"); R.res.forEach(function(r){ ul.appendChild(h("li",{},(r.name?"✅ ":"➖ ")+ICON[r.sit]+" "+esc(t().sit[r.sit].name))); }); box.appendChild(ul);
+  var ul=h("ul"); R.res.forEach(function(r){ ul.appendChild(h("li",{},(r.name?"⭐ ":"➖ ")+ICON[r.sit]+" "+esc(t().sit[r.sit].name))); }); box.appendChild(ul);
   var seen={}, names=[]; R.res.forEach(function(r){ if(!seen[r.sit]){ seen[r.sit]=1; names.push(ICON[r.sit]+" "+t().sit[r.sit].name); } });
-  box.appendChild(h("div",{"class":"mission"},"<p><b>⚽ "+esc(st().play)+"</b></p><p>"+esc(st().mission)+"</p><p>"+names.map(esc).join("<br>")+"</p>"));
+  box.appendChild(h("div",{"class":"mission"},"<p><b>⚽ "+esc(t().playw)+"</b></p><p>"+esc(t().mission)+"</p><p>"+names.map(esc).join("<br>")+"</p>"));
   var row=h("div",{"class":"row"});
   row.appendChild(h("button",{"class":"big ghost",onclick:goHome},esc(t().album)));
   row.appendChild(h("button",{"class":"big",id:"againBtn",onclick:newRound},esc(t().again)));
   box.appendChild(row); app.appendChild(box);
 }
+
+/* ---------- win page with fireworks ---------- */
+var fw=null;
+function stopFireworks(){ if(fw){ cancelAnimationFrame(fw.raf); fw.cv.remove(); fw=null; } }
+function startFireworks(){
+  stopFireworks(); if(REDUCE) return;
+  var cv=h("canvas",{"class":"fw","aria-hidden":"true"}); document.body.appendChild(cv);
+  var ctx=cv.getContext("2d"), parts=[], cols=["#FFD23F","#ffffff","#5FD782","#E53935","#FFE45C"], last=0, dpr=window.devicePixelRatio||1;
+  cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
+  function burst(){ var x=cv.width*(0.15+Math.random()*0.7), y=cv.height*(0.12+Math.random()*0.35), c=cols[Math.floor(Math.random()*cols.length)];
+    for(var i=0;i<46;i++){ var a=Math.random()*Math.PI*2, s=(1.5+Math.random()*3.5)*dpr; parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:60+Math.random()*30,c:c}); } }
+  function frame(ts){
+    if(!fw) return;
+    if(ts-last>650){ burst(); last=ts; }
+    ctx.clearRect(0,0,cv.width,cv.height);
+    parts=parts.filter(function(q){ return q.life>0; });
+    parts.forEach(function(q){ q.x+=q.vx; q.y+=q.vy; q.vy+=0.05*dpr; q.life--; ctx.globalAlpha=Math.max(0,q.life/90); ctx.fillStyle=q.c; ctx.beginPath(); ctx.arc(q.x,q.y,2.6*dpr,0,7); ctx.fill(); });
+    ctx.globalAlpha=1; fw.raf=requestAnimationFrame(frame);
+  }
+  fw={cv:cv, raf:0}; fw.raf=requestAnimationFrame(frame);
+}
+function renderWin(){
+  var box=h("section",{"class":"win"});
+  box.appendChild(h("div",{"class":"trophy"},"🏆"));
+  box.appendChild(h("h1",{},esc(t().winTitle)));
+  box.appendChild(h("p",{},esc(t().winText)));
+  var balls=h("div",{"class":"rain","aria-hidden":"true"}); for(var i=0;i<12;i++) balls.appendChild(h("span",{style:"left:"+(i*8.3+Math.random()*4).toFixed(1)+"%;animation-delay:"+(Math.random()*2.5).toFixed(2)+"s"},BALL(30,"bb")));
+  box.appendChild(balls);
+  box.appendChild(h("button",{"class":"big",id:"winBack",onclick:goHome},esc(t().winBack)));
+  app.appendChild(box); startFireworks();
+  speak(t().winTitle+" "+t().winText);
+}
 function render(){
   document.documentElement.lang=store.lang; document.title="VDJ";
+  if(screen!=="win") stopFireworks();
   app.innerHTML=""; app.appendChild(header());
   if(screen==="home") renderHome();
   else if(screen==="play" && R && R.s) renderPlay();
   else if(screen==="end" && R) renderEnd();
+  else if(screen==="win") renderWin();
   else { screen="home"; renderHome(); }
 }
 render();
@@ -609,8 +741,9 @@ if("serviceWorker" in navigator && /github\.io$|^localhost$|^127\./.test(locatio
   window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
 }
 window.VDJ={ get R(){ return R; }, get screen(){ return screen; }, store:store, PICS:PICS, mirrorPic:mirrorPic,
-  pickName:pickName, pickDec:pickDec, next:nextPic, cont:toDecide, newRound:newRound,
-  forceRound:function(ids, mirror){ buildRound(ids.map(function(id){ var p=PICS.filter(function(q){ return q.id===id; })[0]; return mirror?mirrorPic(p):clone(p); })); } };
+  pickName:pickName, pickDec:pickDec, next:nextPic, newRound:newRound, totalStars:totalStars,
+  forceRound:function(ids, mirror){ buildRound(ids.map(function(id){ var p=PICS.filter(function(q){ return q.id===id; })[0]; return mirror?mirrorPic(p):clone(p); })); },
+  previewWin:function(){ screen="win"; render(); } };
 })();
 
 </script>
