@@ -58,7 +58,7 @@ h2{font-size:1.15rem;margin:22px 0 10px}
 /* play */
 .bar{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .back{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:6px 0}
-.dots{display:flex;gap:5px;margin-left:auto}
+.dots{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;margin-left:auto;max-width:70%}
 .dots i{width:12px;height:12px;border-radius:50%;background:var(--none)}
 .dots i.ok{background:var(--good)} .dots i.no{background:var(--bad)} .dots i.now{background:var(--gold)}
 .step{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-weight:700;margin:2px 0 6px}
@@ -137,6 +137,10 @@ h3.group{font-size:1rem;color:var(--muted);margin:16px 0 6px}
 .rain span{position:absolute;top:-40px;animation:fall 3.2s linear infinite}
 @keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
 canvas.fw{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.mslist{list-style:none;padding:0;margin:0 0 14px;text-align:left}
+.mslist li{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--goldt);border-radius:12px;padding:10px 12px;margin:0 0 8px;font-weight:700}
+.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#15301F;color:#FFD23F;font-weight:700;padding:10px 16px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:30;max-width:92%;text-align:center;transition:opacity .5s,transform .5s}
+.toast.out{opacity:0;transform:translate(-50%,-12px)}
 @media (prefers-reduced-motion: reduce){ .opt.locked::after,.nextbtn.locked::after{animation-duration:.01s} .bounce,.win .trophy,.rain span{animation:none} }
 </style>
 </head>
@@ -147,9 +151,11 @@ canvas.fw{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
    Each picture shows a 300-unit-tall window starting at y0. Entities: [x, y, "k"] where "k" marks a keeper. */
 
 var SITS = ["gk","shadow","free","space","two1","shot","bunch","coming","freeopp","squeeze","closest","onev1","lost","won"];
-var BUILT = {gk:1, two1:1, coming:1, onev1:1};
+var BUILT = {gk:1, two1:1, coming:1, onev1:1, shadow:1, free:1, space:1, shot:1, bunch:1, freeopp:1, squeeze:1, closest:1, lost:1, won:1};
 /* one close lookalike (the key discrimination) + one that is wrong because of who has the ball */
-var DISTRACT = {gk:["coming","lost"], two1:["onev1","lost"], coming:["onev1","won"], onev1:["coming","gk"]};
+var DISTRACT = {gk:["coming","lost"], two1:["onev1","lost"], coming:["onev1","won"], onev1:["coming","gk"],
+  shadow:["free","coming"], free:["space","lost"], space:["free","coming"], shot:["space","gk"], bunch:["shadow","coming"],
+  freeopp:["coming","won"], squeeze:["coming","won"], closest:["squeeze","free"], lost:["won","space"], won:["lost","coming"]};
 /* the three moments of the game, for the album */
 var GROUPS = [["have",["gk","shadow","free","space","two1","shot","bunch"]],["theirs",["coming","freeopp","squeeze","closest","onev1"]],["switch",["lost","won"]]];
 var STARS_AT = [1,3,6];   /* first-try recognitions needed for 1, 2 and 3 stars */
@@ -206,42 +212,164 @@ var PICS = [
   dec:{t:"btn", q:"act", opts:["stay","slide","pounce"], ok:"pounce", out:{pounce:[[186,405,115,430]], stay:[[186,405,250,480]], slide:[[186,405,250,480]]}}},
  {id:"o4", sit:"onev1", y0:250, us:[[185,525,"k"],[290,330]], them:[[55,395]], m:[82,425], ball:[55,406],
   arrows:[[55,395,82,425,"r"]], clue:[[55,400],[82,425]],
-  dec:{t:"btn", q:"act", opts:["stay","slide","pounce"], ok:"stay", out:{stay:[[55,406,40,490]], slide:[[55,406,150,505]], pounce:[[55,406,150,505]]}}}
-];
+  dec:{t:"btn", q:"act", opts:["stay","slide","pounce"], ok:"stay", out:{stay:[[55,406,40,490]], slide:[[55,406,150,505]], pounce:[[55,406,150,505]]}}},
+ /* ---------- A red player stands between you and the ball: move to the side ---------- */
+ {id:"sh1", sit:"shadow", y0:150, us:[[150,380],[60,300]], them:[[175,315],[130,235],[300,200]], m:[200,261], ball:[150,369],
+  clue:[[150,375],[175,315],[200,261]], dec:{t:"spot", q:"mate", spots:{stay:[200,261], side:[260,290], far:[120,190]}, ok:"side", out:"pass"}},
+ {id:"sh2", sit:"shadow", y0:160, us:[[240,390],[320,300]], them:[[205,330],[243,250],[80,230]], m:[170,281], ball:[240,379],
+  clue:[[240,385],[205,330],[170,281]], dec:{t:"spot", q:"mate", spots:{stay:[170,281], side:[110,320], far:[245,200]}, ok:"side", out:"pass"}},
+ {id:"sh3", sit:"shadow", y0:165, us:[[110,400],[300,420]], them:[[150,340],[105,250],[300,250]], m:[190,291], ball:[110,389],
+  clue:[[110,395],[150,340],[190,291]], dec:{t:"spot", q:"mate", spots:{stay:[190,291], side:[240,330], far:[100,200]}, ok:"side", out:"pass"}},
+ {id:"sh4", sit:"shadow", y0:165, us:[[185,400],[60,410]], them:[[185,335],[275,240],[80,250]], m:[185,281], ball:[185,389],
+  clue:[[185,395],[185,335],[185,281]], dec:{t:"spot", q:"mate", spots:{stay:[185,281], side:[115,300], far:[290,200]}, ok:"side", out:"pass"}},
 
+ /* ---------- A teammate is free: pass to him (you have the ball, a red player blocks your way) ---------- */
+ {id:"f1", sit:"free", y0:150, us:[[90,320],[260,300]], them:[[150,300],[118,328],[165,240]], m:[150,350], ball:[150,339],
+  clue:[[150,350],[150,300],[260,300]], dec:{t:"spot", q:"who", spots:{near:[90,320], free:[260,300], far:[170,200]}, ok:"free", out:"give"}},
+ {id:"f2", sit:"free", y0:160, us:[[120,330],[300,320]], them:[[230,310],[268,335],[220,250]], m:[230,360], ball:[230,349],
+  clue:[[230,360],[230,310],[120,330]], dec:{t:"spot", q:"who", spots:{near:[300,320], free:[120,330], far:[215,210]}, ok:"free", out:"give"}},
+ {id:"f3", sit:"free", y0:170, us:[[240,360],[80,300]], them:[[185,330],[215,363],[196,260]], m:[185,380], ball:[185,369],
+  clue:[[185,380],[185,330],[80,300]], dec:{t:"spot", q:"who", spots:{near:[240,360], free:[80,300], far:[200,220]}, ok:"free", out:"give"}},
+ {id:"f4", sit:"free", y0:150, us:[[60,330],[220,310]], them:[[120,315],[85,337],[137,245]], m:[120,360], ball:[120,349],
+  clue:[[120,360],[120,315],[220,310]], dec:{t:"spot", q:"who", spots:{near:[60,330], free:[220,310], far:[140,200]}, ok:"free", out:"give"}},
+
+ /* ---------- You have space in front of you: run forward with the ball ---------- */
+ {id:"sp1", sit:"space", y0:140, us:[[120,410]], them:[[300,250],[60,200],[250,380]], m:[150,330], ball:[150,319],
+  clue:[[150,330],[155,250]], dec:{t:"btn", q:"act", opts:["run","passback","wait"], ok:"run", out:{run:[[150,330,160,200]], passback:[[150,319,124,400]], wait:[[300,250,175,310],[60,200,135,300]]}}},
+ {id:"sp2", sit:"space", y0:140, us:[[290,420]], them:[[90,230],[330,200],[140,400]], m:[240,340], ball:[240,329],
+  clue:[[240,340],[232,260]], dec:{t:"btn", q:"act", opts:["run","passback","wait"], ok:"run", out:{run:[[240,340,225,205]], passback:[[240,329,286,410]], wait:[[90,230,215,310],[330,200,262,312]]}}},
+ {id:"sp3", sit:"space", y0:140, us:[[180,410]], them:[[250,230],[300,330],[60,420]], m:[100,320], ball:[100,309],
+  clue:[[100,320],[105,240]], dec:{t:"btn", q:"act", opts:["run","passback","wait"], ok:"run", out:{run:[[100,320,110,190]], passback:[[100,309,176,400]], wait:[[250,230,125,295]]}}},
+ {id:"sp4", sit:"space", y0:130, us:[[150,400]], them:[[60,180],[320,180],[260,400]], m:[200,300], ball:[200,289],
+  clue:[[200,300],[198,215]], dec:{t:"btn", q:"act", opts:["run","passback","wait"], ok:"run", out:{run:[[200,300,195,170]], passback:[[200,289,155,390]], wait:[[60,180,180,280],[320,180,220,280]]}}},
+
+ /* ---------- You can shoot: close to their goal, nobody in the way ---------- */
+ {id:"s1", sit:"shot", y0:0, us:[[290,110]], them:[[195,26,"k"],[265,112],[300,180]], m:[170,120], ball:[170,109],
+  clue:[[170,120],[185,12]], dec:{t:"btn", q:"act", opts:["shoot","pass","dribble"], ok:"shoot", out:{shoot:[[170,109,172,4]], pass:[[170,109,280,110]], dribble:[[170,120,95,140]]}}},
+ {id:"s2", sit:"shot", y0:0, us:[[100,120]], them:[[175,28,"k"],[130,118],[90,200],[320,90]], m:[215,130], ball:[215,119],
+  clue:[[215,130],[185,12]], dec:{t:"btn", q:"act", opts:["shoot","pass","dribble"], ok:"shoot", out:{shoot:[[215,119,199,4]], pass:[[215,119,110,120]], dribble:[[215,130,300,150]]}}},
+ {id:"s3", sit:"shot", y0:0, us:[[262,150]], them:[[193,30,"k"],[240,140],[60,160]], m:[150,90], ball:[150,79],
+  clue:[[150,90],[185,12]], dec:{t:"btn", q:"act", opts:["shoot","pass","dribble"], ok:"shoot", out:{shoot:[[150,79,170,4]], pass:[[150,79,255,148]], dribble:[[150,90,80,125]]}}},
+ {id:"s4", sit:"shot", y0:0, us:[[120,170]], them:[[172,30,"k"],[140,150],[110,110]], m:[230,100], ball:[230,89],
+  clue:[[230,100],[185,12]], dec:{t:"btn", q:"act", opts:["shoot","pass","dribble"], ok:"shoot", out:{shoot:[[230,89,199,4]], pass:[[230,89,128,165]], dribble:[[230,100,310,130]]}}},
+
+ /* ---------- Everyone runs to the ball: get out of the crowd ---------- */
+ {id:"b1", sit:"bunch", y0:150, us:[[185,330],[150,345],[220,350]], them:[[160,300],[215,300],[185,370]], m:[195,285], ball:[185,319],
+  clue:[[185,325],[195,285]], dec:{t:"spot", q:"go", spots:{stay:[195,285], ball:[140,320], space:[300,345]}, ok:"space", out:"crowd"}},
+ {id:"b2", sit:"bunch", y0:180, us:[[170,360],[205,380],[140,385]], them:[[150,330],[195,330],[172,400]], m:[130,345], ball:[170,349],
+  clue:[[170,355],[130,345]], dec:{t:"spot", q:"go", spots:{stay:[130,345], ball:[215,352], space:[300,370]}, ok:"space", out:"crowd"}},
+ {id:"b3", sit:"bunch", y0:170, us:[[200,300],[165,315],[235,320]], them:[[175,270],[230,270],[200,340]], m:[155,290], ball:[200,289],
+  clue:[[200,295],[155,290]], dec:{t:"spot", q:"go", spots:{stay:[155,290], ball:[245,295], space:[80,380]}, ok:"space", out:"crowd"}},
+ {id:"b4", sit:"bunch", y0:160, us:[[160,320],[125,340],[195,345]], them:[[140,290],[190,285],[160,365]], m:[200,315], ball:[160,309],
+  clue:[[160,315],[200,315]], dec:{t:"spot", q:"go", spots:{stay:[200,315], ball:[115,305], space:[300,330]}, ok:"space", out:"crowd"}},
+ /* ---------- Their player is alone near our goal: get on the line of the pass ---------- */
+ {id:"fo1", sit:"freeopp", y0:250, us:[[185,525,"k"],[80,420]], them:[[320,330],[200,455],[100,300]], m:[140,360], ball:[320,341],
+  clue:[[200,455],[320,335]], dec:{t:"spot", q:"go", spots:{cut:[230,426], ball:[335,300], stay:[140,360]}, ok:"cut", out:"cut", target:[200,455]}},
+ {id:"fo2", sit:"freeopp", y0:250, us:[[185,525,"k"],[300,420]], them:[[60,320],[210,460],[280,300]], m:[240,360], ball:[60,331],
+  clue:[[210,460],[60,325]], dec:{t:"spot", q:"go", spots:{cut:[172,428], ball:[40,290], stay:[240,360]}, ok:"cut", out:"cut", target:[210,460]}},
+ {id:"fo3", sit:"freeopp", y0:250, us:[[185,525,"k"],[300,450]], them:[[185,300],[90,470],[290,330]], m:[260,380], ball:[185,311],
+  clue:[[90,470],[185,305]], dec:{t:"spot", q:"go", spots:{cut:[118,422], ball:[220,290], stay:[260,380]}, ok:"cut", out:"cut", target:[90,470]}},
+ {id:"fo4", sit:"freeopp", y0:250, us:[[185,525,"k"],[80,380]], them:[[300,420],[150,500],[200,300]], m:[220,360], ball:[300,431],
+  clue:[[150,500],[300,425]], dec:{t:"spot", q:"go", spots:{cut:[195,479], ball:[325,395], stay:[220,360]}, ok:"cut", out:"cut", target:[150,500]}},
+
+ /* ---------- The ball is on the other side: come in, close the gap ---------- */
+ {id:"sq1", sit:"squeeze", y0:240, us:[[185,525,"k"],[110,400],[175,420]], them:[[70,330],[150,300],[250,280]], m:[310,360], ball:[70,341],
+  clue:[[70,335],[310,360]], dec:{t:"spot", q:"go", spots:{stay:[310,360], "in":[235,420], ball:[100,315]}, ok:"in", out:"shape", arr:{stay:[[250,280,245,460]], ball:[[250,280,245,460]]}}},
+ {id:"sq2", sit:"squeeze", y0:240, us:[[185,525,"k"],[250,410],[190,430]], them:[[300,320],[220,290],[110,300]], m:[60,350], ball:[300,331],
+  clue:[[300,325],[60,350]], dec:{t:"spot", q:"go", spots:{stay:[60,350], "in":[130,425], ball:[270,305]}, ok:"in", out:"shape", arr:{stay:[[110,300,125,460]], ball:[[110,300,125,460]]}}},
+ {id:"sq3", sit:"squeeze", y0:240, us:[[185,525,"k"],[130,380],[190,400]], them:[[90,300],[160,270],[280,300]], m:[320,330], ball:[90,311],
+  clue:[[90,305],[320,330]], dec:{t:"spot", q:"go", spots:{stay:[320,330], "in":[250,400], ball:[120,285]}, ok:"in", out:"shape", arr:{stay:[[280,300,265,460]], ball:[[280,300,265,460]]}}},
+ {id:"sq4", sit:"squeeze", y0:240, us:[[185,525,"k"],[240,390],[175,410]], them:[[280,290],[200,270],[90,320]], m:[55,340], ball:[280,301],
+  clue:[[280,295],[55,340]], dec:{t:"spot", q:"go", spots:{stay:[55,340], "in":[115,410], ball:[255,268]}, ok:"in", out:"shape", arr:{stay:[[90,320,110,460]], ball:[[90,320,110,460]]}}},
+
+ /* ---------- They have the ball and you are the closest: go to him ---------- */
+ {id:"cl1", sit:"closest", y0:150, us:[[100,380],[290,400]], them:[[180,280],[90,230],[300,220]], m:[215,320], ball:[180,291],
+  clue:[[180,285],[215,320]], dec:{t:"btn", q:"act", opts:["press","waitmate","runback"], ok:"press", out:{press:[[215,320,190,297]], waitmate:[[180,291,185,410]], runback:[[180,291,185,410]]}}},
+ {id:"cl2", sit:"closest", y0:150, us:[[250,380],[60,420]], them:[[120,300],[230,240],[60,230]], m:[165,330], ball:[120,311],
+  clue:[[120,305],[165,330]], dec:{t:"btn", q:"act", opts:["press","waitmate","runback"], ok:"press", out:{press:[[165,330,133,314]], waitmate:[[120,311,130,425]], runback:[[120,311,130,425]]}}},
+ {id:"cl3", sit:"closest", y0:150, us:[[130,370],[300,420]], them:[[260,290],[150,240],[330,230]], m:[225,330], ball:[260,301],
+  clue:[[260,295],[225,330]], dec:{t:"btn", q:"act", opts:["press","waitmate","runback"], ok:"press", out:{press:[[225,330,248,308]], waitmate:[[260,301,250,425]], runback:[[260,301,250,425]]}}},
+ {id:"cl4", sit:"closest", y0:140, us:[[90,350],[280,350]], them:[[190,250],[100,200],[290,190]], m:[185,300], ball:[190,261],
+  clue:[[190,255],[185,300]], dec:{t:"btn", q:"act", opts:["press","waitmate","runback"], ok:"press", out:{press:[[185,300,189,274]], waitmate:[[190,261,200,400]], runback:[[190,261,200,400]]}}},
+
+ /* ---------- We just lost the ball: close, chase it. Far, run back ---------- */
+ {id:"lo1", sit:"lost", y0:150, us:[[110,250],[80,380]], them:[[200,280],[300,220],[60,200]], m:[225,305], ball:[200,291],
+  arrows:[[118,254,192,278,"b"]], clue:[[200,285],[225,305]],
+  dec:{t:"btn", q:"act", opts:["chase","home","sulk"], ok:"chase", out:{chase:[[225,305,207,292]], home:[[225,305,192,420]], sulk:[[200,291,195,420]]}}},
+ {id:"lo2", sit:"lost", y0:150, us:[[260,250],[80,380]], them:[[150,270],[60,220],[250,330]], m:[310,195], ball:[150,281],
+  arrows:[[252,254,158,268,"b"]], clue:[[150,275],[310,195]],
+  dec:{t:"btn", q:"act", opts:["chase","home","sulk"], ok:"home", out:{home:[[310,195,166,400]], chase:[[310,195,162,276]], sulk:[[150,281,160,425]]}}},
+ {id:"lo3", sit:"lost", y0:200, us:[[250,330],[300,440]], them:[[170,320],[80,260],[290,250]], m:[140,295], ball:[170,331],
+  arrows:[[242,330,178,322,"b"]], clue:[[170,325],[140,295]],
+  dec:{t:"btn", q:"act", opts:["chase","home","sulk"], ok:"chase", out:{chase:[[140,295,163,318]], home:[[140,295,176,440]], sulk:[[170,331,180,450]]}}},
+ {id:"lo4", sit:"lost", y0:140, us:[[100,230],[300,380]], them:[[220,280],[150,350],[320,200]], m:[60,170], ball:[220,291],
+  arrows:[[108,234,212,277,"b"]], clue:[[220,285],[60,170]],
+  dec:{t:"btn", q:"act", opts:["chase","home","sulk"], ok:"home", out:{home:[[60,170,205,400]], chase:[[60,170,212,283]], sulk:[[220,291,215,425]]}}},
+
+ /* ---------- We just won the ball: look up. A free teammate in front: pass. Nobody, but space: run ---------- */
+ {id:"w1", sit:"won", y0:130, us:[[280,190],[80,400]], them:[[110,280],[175,272],[260,330]], m:[170,320], ball:[170,309],
+  arrows:[[118,283,162,307,"b"],[260,330,185,544,"r"]], clue:[[170,315],[280,190]],
+  dec:{t:"btn", q:"act", opts:["fwdpass","run","passback"], ok:"fwdpass", out:{fwdpass:[[170,309,272,196]], run:[[170,320,172,285]], passback:[[170,309,170,410]]}}},
+ {id:"w2", sit:"won", y0:140, us:[[100,200],[300,410]], them:[[300,300],[225,282],[150,340]], m:[230,330], ball:[230,319],
+  arrows:[[292,302,238,317,"b"],[150,340,185,544,"r"]], clue:[[230,325],[100,200]],
+  dec:{t:"btn", q:"act", opts:["fwdpass","run","passback"], ok:"fwdpass", out:{fwdpass:[[230,319,108,206]], run:[[230,330,227,295]], passback:[[230,319,230,420]]}}},
+ {id:"w3", sit:"won", y0:130, us:[[250,180],[300,400]], them:[[190,270],[120,255],[200,340]], m:[120,300], ball:[120,289],
+  arrows:[[182,272,128,287,"b"],[200,340,185,544,"r"]], clue:[[120,295],[250,180]],
+  dec:{t:"btn", q:"act", opts:["fwdpass","run","passback"], ok:"fwdpass", out:{fwdpass:[[120,289,243,187]], run:[[120,300,120,268]], passback:[[120,289,120,400]]}}},
+ {id:"w4", sit:"won", y0:140, us:[[120,420],[280,420]], them:[[250,300],[300,360],[80,350]], m:[190,320], ball:[190,309],
+  arrows:[[242,302,198,310,"b"],[300,360,185,544,"r"],[80,350,185,544,"r"]], clue:[[190,315],[192,240]],
+  dec:{t:"btn", q:"act", opts:["fwdpass","run","passback"], ok:"run", out:{run:[[190,320,195,190]], fwdpass:[[190,309,200,165]], passback:[[190,309,125,410]]}}}
+];
 var NB = "\u202F";
 var T = {
  en:{
   play:"Play", album:"My album", home:"Home", next:"Next",
   q1:"What is happening?", yes:"Yes! ", tryAgain:"Try again.", good:"Well done!", notThis:"Not this one.",
   roundDone:"End of the round!", again:"Play again",
-  score:function(n,t){ return "You found "+n+" situations out of "+t+" on the first try."; },
+  score:function(n,t){ return "You got "+n+(n===1?" picture":" pictures")+" out of "+t+" right on the first try, at both steps."; },
   mission:"In your next match, look for these situations:",
   soon:"Coming soon", looks:"What you see", todo:"What you do", listen:"Listen", close:"Close",
   voiceOn:"Voice on", voiceOff:"Voice off", you:"You", keeper:"Keeper", ourGoal:"Our goal", theirGoal:"Their goal",
   us:"Your team", them:"The other team", tapSpot:"Tap A, B or C on the pitch.",
   starsTotal:function(n,t){ return n+" stars out of "+t; },
-  howStars:"You win a star each time you find a situation on the first try: 1 time, 3 times, then 6 times.",
+  howStars:"You win a star when you get a situation right on the first try, at both steps (See and Decide). 1 success: 1 star. 3 successes: 2 stars. 6 successes: 3 stars.",
   group:{have:"We have the ball", theirs:"They have the ball", "switch":"The ball changes team"},
   winTitle:"Well done! You finished the game!", winText:"You found every situation. You can read the game!", winBack:"Back to my album", trophy:"My trophy",
-  see:"See", decide:"Decide", playw:"Play",
-  q:{gk:"Where do you go to get the ball from your keeper?", run:"Where do you run?", act:"What do you do?"},
-  opt:{pass:"I pass to my teammate", go:"I keep the ball and I shoot", back:"I turn back", stay:"I stay on my feet", slide:"I slide for the ball", pounce:"I step in and I take the ball"},
+  see:"See", decide:"Decide", playw:"Play", cont:"Continue", newStar:"New star:",
+  ms:{title:"Well done!", sit3:function(n){ return n+": you know this situation by heart!"; }, all1:"Every situation has at least 1 star!", half:"Half of the stars! You are halfway through the game.", all2:"Every situation has at least 2 stars!"},
+  q:{gk:"Where do you go to get the ball from your keeper?", run:"Where do you run?", act:"What do you do?", mate:"Where do you go so your teammate can pass to you?", who:"Who do you pass to?", go:"Where do you go?"},
+  opt:{pass:"I pass to my teammate", go:"I keep the ball and I shoot", back:"I turn back", stay:"I stay on my feet", slide:"I slide for the ball", pounce:"I step in and I take the ball", run:"I run forward with the ball", passback:"I pass back", wait:"I stop and wait", shoot:"I shoot, far from the keeper", dribble:"I dribble to the side", press:"I go to him straight away", waitmate:"I wait for a teammate", runback:"I run back to our goal", chase:"I chase the ball straight away", home:"I run back between the ball and our goal", sulk:"I stop and put my hands on my head", fwdpass:"I look up and I pass forward"},
   sit:{
    gk:{name:"Our keeper has the ball", looks:"Our keeper holds the ball.", todo:"You move away from the red players. Then the keeper can pass to you.", hint:"Look: who has the ball?"},
-   shadow:{name:"A red player stands between you and the ball"}, free:{name:"A teammate is free"}, space:{name:"You have space in front of you"},
+   shadow:{name:"A red player stands between you and the ball", looks:"Your teammate has the ball. A red player stands between you and him.", todo:"You move to the side until you can see the ball.", hint:"Look at the line from the ball to you. Is a red player on it?"},
+   free:{name:"A teammate is free", looks:"You have the ball. A red player is in front of you. A teammate has nobody near him.", todo:"You pass to the free teammate, even if he is further away.", hint:"Look at your teammates. Which one has no red player near him?"},
+   space:{name:"You have space in front of you", looks:"You have the ball. Nobody is in front of you.", todo:"You run forward with the ball, into the empty grass.", hint:"Look in front of you. Is there a red player?"},
    two1:{name:"Two of you attack one defender", looks:"You and a teammate attack. Only one defender is there.", todo:"You watch the defender. He comes to you: you pass. He goes to your teammate: you keep the ball.", hint:"Count the players near the ball. How many black players? How many red players?"},
-   shot:{name:"You can shoot"}, bunch:{name:"Everyone runs to the ball"},
+   shot:{name:"You can shoot", looks:"You have the ball close to their goal. Nobody stands between you and the goal.", todo:"You shoot, low and far from the keeper.", hint:"Look at their goal. Is it close? Is anyone in the way?"},
+   bunch:{name:"Everyone runs to the ball", looks:"Your teammate has the ball. Many players from both teams are around him.", todo:"You go away from the crowd, into empty grass. Then your teammate can pass to you.", hint:"Look around the ball. How many players are there?"},
    coming:{name:"Their player runs at our goal. You are far away.", looks:"Their player has the ball. He runs at our goal. You are far from him.", todo:"You run back. You stand between the ball and our goal.", hint:"Look at the red player with the ball. Where does he run? Are you close to him?"},
-   freeopp:{name:"Their player is alone near our goal"}, squeeze:{name:"The ball is on the other side"}, closest:{name:"They have the ball and you are the closest"},
+   freeopp:{name:"Their player is alone near our goal", looks:"They have the ball. One of their players waits alone near our goal.", todo:"You go to him. You stand on the line between the ball and him, so the pass cannot reach him.", hint:"Look near our goal. Is a red player alone there?"},
+   squeeze:{name:"The ball is on the other side", looks:"They have the ball on the far side. You are far from the ball.", todo:"You come closer to your teammates, towards the middle and a bit back. Then there is no gap.", hint:"Look where the ball is. Is it on your side or on the other side?"},
+   closest:{name:"They have the ball and you are the closest", looks:"They have the ball. You are the closest player to him.", todo:"You go to him straight away. Your teammates get ready behind you.", hint:"Look at the red player with the ball. Which black player is closest to him?"},
    onev1:{name:"Their player runs at you with the ball", looks:"Their player has the ball. He is close to you. It is you against him.", todo:"You stay on your feet. You slide only when he is past you and you can reach the ball.", hint:"Look at the red player with the ball. Is he close to you?"},
-   lost:{name:"We just lost the ball"}, won:{name:"We just won the ball"}
+   lost:{name:"We just lost the ball", looks:"A red player just took the ball from us.", todo:"He is close: you chase the ball straight away. He is far: you run back between the ball and our goal.", hint:"Follow the white arrow. Where did the ball go?"},
+   won:{name:"We just won the ball", looks:"You just took the ball from them. Their players are still out of place.", todo:"You look up straight away. You pass forward to a free teammate, or you run with the ball if you have space.", hint:"Follow the white arrow. Who has the ball now?"}
   },
   whyName:{
    gk:{coming:"Our keeper has the ball. Their player does not have it.", lost:"We have the ball: our keeper holds it."},
    two1:{onev1:"Count again: two of you are near the ball, and only one defender.", lost:"You have the ball. Look at the ball at your feet."},
    coming:{onev1:"Their player is far from you. He does not run at you.", won:"They have the ball: the red player has it."},
-   onev1:{coming:"Their player is not far from you. He is close to you.", gk:"Our keeper does not have the ball. The red player has it."}
+   onev1:{coming:"Their player is not far from you. He is close to you.", gk:"Our keeper does not have the ball. The red player has it."},
+   shadow:{free:"You do not have the ball. Your teammate has it.", coming:"We have the ball. Your teammate has it."},
+   free:{space:"A red player is in front of you. You do not have space in front.", lost:"You still have the ball. Look at the ball at your feet."},
+   space:{free:"Look in front of you: nobody is there.", coming:"We have the ball. You have it."},
+   shot:{space:"Look how close their goal is.", gk:"Our keeper does not have the ball. You have it."},
+   bunch:{shadow:"Look again: many players stand around the ball.", coming:"We have the ball. Your teammate has it."},
+   freeopp:{coming:"The player near our goal does not have the ball. He waits for a pass.", won:"They have the ball. A red player has it."},
+   squeeze:{coming:"Their player does not run at our goal. He has the ball on the other side.", won:"They have the ball. A red player has it."},
+   closest:{squeeze:"The ball is near you, on your side.", free:"We do not have the ball. A red player has it."},
+   lost:{won:"Look at the ball: it went to a red player.", space:"You do not have the ball any more. A red player has it."},
+   won:{lost:"Look at the ball: it came to you.", coming:"We have the ball now. You have it."}
   },
   whyDec:{
    gk:{"wide|stay":"A red player stands between you and the keeper. The pass cannot reach you.", "wide|far":"A red player is on the way of this long pass. He can take the ball.",
@@ -251,7 +379,19 @@ var T = {
    coming:{"home|chase":"You run behind him. You arrive too late to stop him.", "home|stay":"You stay far away. Nobody stops him on his way to our goal."},
    onev1:{"stay|slide":"He still has the ball at his feet. If you slide, he goes around you.", "stay|pounce":"The ball is at his feet. If you jump in, he goes past you.",
           "slide|stay":"He is already past you. If you only run, he gets to our goal first.", "slide|pounce":"He is past you. You cannot step in front of him now.",
-          "pounce|stay":"The ball is closer to you than to him. If you wait, he gets it back.", "pounce|slide":"The ball is close to you. You do not need to slide."}
+          "pounce|stay":"The ball is closer to you than to him. If you wait, he gets it back.", "pounce|slide":"The ball is close to you. You do not need to slide."},
+   shadow:{"side|stay":"The red player is still between you and the ball. The pass cannot reach you.", "side|far":"Another red player is on the way of the pass. He can take the ball."},
+   free:{"free|near":"A red player is on the way of this pass. He can take the ball.", "free|far":"This long pass goes near red players. They can take the ball."},
+   space:{"run|passback":"You have empty grass in front of you. If you pass back, you lose that space.", "run|wait":"If you wait, the red players come back. The space closes."},
+   shot:{"shoot|pass":"A red player is next to your teammate. He can take the pass, and you miss your chance to score.", "shoot|dribble":"If you dribble to the side, the red players come back. You miss your chance."},
+   bunch:{"space|stay":"You stay in the crowd. One red player can guard two of you, and nobody can pass to you.", "space|ball":"You run to the ball too. Now even more players are around the ball."},
+   freeopp:{"cut|ball":"You run to the ball. Their player near our goal stays alone, and the pass reaches him.", "cut|stay":"You stay far away. Their player near our goal is alone, and the pass reaches him."},
+   squeeze:{"in|stay":"You stay wide, far from your team. A red player can run into the big gap.", "in|ball":"You run all the way to the ball. Your side is empty, and a red player can run there."},
+   closest:{"press|waitmate":"You are the closest. If you wait, he has time to run with the ball.", "press|runback":"You are the closest. If you run away, nobody stops him."},
+   lost:{"chase|home":"He is right next to you. If you run back, he has time to look up and pass.", "chase|sulk":"If you stop, he runs away with the ball.",
+         "home|chase":"He is too far away. You arrive too late, and nobody protects our goal.", "home|sulk":"If you stop, nobody protects our goal."},
+   won:{"fwdpass|run":"A red player is in front of you. If you run, he takes the ball back.", "fwdpass|passback":"Their players are out of place now. If you pass back, they have time to come back.",
+        "run|fwdpass":"Nobody from your team is in front of you. The pass goes to nobody.", "run|passback":"You have empty grass in front of you. If you pass back, their players have time to come back."}
   },
   ex:{
    gk1:"You saw a red player between you and the keeper. You moved to the side. Now nobody blocks the pass.",
@@ -269,40 +409,97 @@ var T = {
    o1:"You saw him run at you with the ball at his feet. You stay on your feet. You stand sideways and you push him to the side.",
    o2:"You saw that he was past you. He pushed the ball in front of him. You can reach the ball from the side, so you slide for the ball.",
    o3:"You saw that his touch was too long. The ball is closer to you than to him. You step in and you take it. You stay on your feet.",
-   o4:"You saw him near the side line with the ball at his feet. You stay on your feet. You keep him on the side, far from our goal."
+   o4:"You saw him near the side line with the ball at his feet. You stay on your feet. You keep him on the side, far from our goal.",
+   sh1:"You saw a red player between you and your teammate. You moved to the side. Now you can see the ball.",
+   sh2:"You saw that the red player was hiding you. You stepped to the side. Now your teammate can see you.",
+   sh3:"You saw a red player on the line between you and the ball. You moved off that line. Now the pass is free.",
+   sh4:"You saw a red player right between you and the ball. You moved to the side. Now nobody blocks the pass.",
+   f1:"You saw a red player in front of you and a free teammate on the side. You passed to him. Nobody can take the ball.",
+   f2:"You saw that one teammate had nobody near him. You passed to him. The pass is safe.",
+   f3:"You saw that the near teammate was marked. You passed to the free one, even if he is further away.",
+   f4:"You saw a red player next to your near teammate. You chose the free teammate. Now your team keeps the ball.",
+   sp1:"You saw empty grass in front of you. You ran forward with the ball. Every step takes you closer to their goal.",
+   sp2:"You saw that nobody was in front of you. You ran into the space with the ball.",
+   sp3:"You saw the red players far away on the side. You ran forward before they came back.",
+   sp4:"You saw a big empty space in front of you. You ran forward with the ball, fast.",
+   s1:"You saw their goal close to you, and nobody in the way. You shot low, far from the keeper.",
+   s2:"You saw a clear way to the goal. The keeper stood on one side, so you shot to the other side.",
+   s3:"You saw that you were very close to their goal. You did not wait. You shot right away.",
+   s4:"You saw nobody between you and the goal. You shot far from the keeper.",
+   b1:"You saw many players around the ball. You went away from the crowd, into empty grass. Now your teammate can pass to you.",
+   b2:"You saw that everyone was close to the ball. You went to the side. Now your team has more space.",
+   b3:"You saw a crowd around your teammate. You moved far from it. Now he has a free pass to you.",
+   b4:"You saw too many players around the ball. You ran to the empty grass. Now your teammate can pass to you.",
+   fo1:"You saw a red player alone near our goal. You went onto the line between the ball and him. Now the pass cannot reach him.",
+   fo2:"You saw their player waiting near our goal. You stood on the way of the pass. Now he cannot get the ball.",
+   fo3:"You saw a red player with nobody near him, close to our goal. You went to him and blocked the pass.",
+   fo4:"You saw their player alone in front of our goal. You stood between the ball and him. Now our goal is safe.",
+   sq1:"You saw the ball on the other side. You came closer to your teammates. Now there is no gap for their players.",
+   sq2:"You saw that the ball was far from you. You came towards the middle. Now your team stands close together.",
+   sq3:"You saw them attack on the other side. You moved in and a bit back. Now nobody can run behind your team.",
+   sq4:"You saw the ball far away on the other side. You came closer to your team. Now the gap is closed.",
+   cl1:"You saw that you were the closest to their player. You went to him straight away. Now he has no time.",
+   cl2:"You saw their player with the ball, and you were the closest. You went to him at once. Your teammates got ready behind you.",
+   cl3:"You saw that nobody was closer to the ball than you. You went to him straight away, so he could not run forward.",
+   cl4:"You saw their player just in front of you. You were the closest, so you went to him straight away.",
+   lo1:"You saw a red player take the ball right next to you. You chased him straight away. He had no time to look up.",
+   lo2:"You saw that we lost the ball far from you. You ran back between the ball and our goal.",
+   lo3:"You saw that we lost the ball close to you. You went after it at once, before he could get away.",
+   lo4:"You saw that the ball was lost on the other side of the pitch. You were too far to chase, so you ran back to protect our goal.",
+   w1:"You saw that you had just won the ball, and a teammate was free in front. You looked up and passed forward fast.",
+   w2:"You saw a red player in front of you, and a free teammate far ahead. You looked up and passed to him at once.",
+   w3:"You saw their players still out of place. You looked up straight away and passed forward to your free teammate.",
+   w4:"You saw that you had just won the ball, with empty grass in front of you. You ran forward before their players came back."
   }
  },
  fr:{
   play:"Jouer", album:"Mon album", home:"Accueil", next:"Suivant",
   q1:"Que se passe-t-il"+NB+"?", yes:"Oui"+NB+"! ", tryAgain:"Essaie encore.", good:"Bravo"+NB+"!", notThis:"Pas celle-ci.",
   roundDone:"Fin de la partie"+NB+"!", again:"Rejouer",
-  score:function(n,t){ return "Tu as trouvé "+n+" situations sur "+t+" du premier coup."; },
+  score:function(n,t){ return "Tu as réussi "+n+(n===1?" image":" images")+" sur "+t+" du premier coup, aux deux étapes."; },
   mission:"Dans ton prochain match, cherche ces situations"+NB+":",
   soon:"Bientôt", looks:"Ce que tu vois", todo:"Ce que tu fais", listen:"Écouter", close:"Fermer",
   voiceOn:"Voix activée", voiceOff:"Voix coupée", you:"Toi", keeper:"Gardien", ourGoal:"Notre but", theirGoal:"Leur but",
   us:"Ton équipe", them:"L'autre équipe", tapSpot:"Touche A, B ou C sur le terrain.",
   starsTotal:function(n,t){ return n+" étoiles sur "+t; },
-  howStars:"Tu gagnes une étoile chaque fois que tu trouves une situation du premier coup"+NB+": 1 fois, 3 fois, puis 6 fois.",
+  howStars:"Tu gagnes des étoiles quand tu réussis une situation du premier coup, aux deux étapes (Vois et Décide). 1 réussite"+NB+": 1 étoile. 3 réussites"+NB+": 2 étoiles. 6 réussites"+NB+": 3 étoiles.",
   group:{have:"Nous avons le ballon", theirs:"Ils ont le ballon", "switch":"Le ballon change d'équipe"},
   winTitle:"Bravo"+NB+"! Tu as fini le jeu"+NB+"!", winText:"Tu as trouvé toutes les situations. Tu sais lire le jeu"+NB+"!", winBack:"Retour à mon album", trophy:"Mon trophée",
-  see:"Vois", decide:"Décide", playw:"Joue",
-  q:{gk:"Où vas-tu pour recevoir le ballon du gardien"+NB+"?", run:"Où cours-tu"+NB+"?", act:"Que fais-tu"+NB+"?"},
-  opt:{pass:"Je passe à mon coéquipier", go:"Je garde le ballon et je tire", back:"Je fais demi-tour", stay:"Je reste debout", slide:"Je tacle en glissant", pounce:"J'avance et je prends le ballon"},
+  see:"Vois", decide:"Décide", playw:"Joue", cont:"Continuer", newStar:"Nouvelle étoile"+NB+":",
+  ms:{title:"Bravo"+NB+"!", sit3:function(n){ return n+NB+": tu connais cette situation par cœur"+NB+"!"; }, all1:"Toutes les situations ont au moins 1 étoile"+NB+"!", half:"La moitié des étoiles"+NB+"! Tu es à mi-chemin du jeu.", all2:"Toutes les situations ont au moins 2 étoiles"+NB+"!"},
+  q:{gk:"Où vas-tu pour recevoir le ballon du gardien"+NB+"?", run:"Où cours-tu"+NB+"?", act:"Que fais-tu"+NB+"?", mate:"Où vas-tu pour que ton coéquipier puisse te passer le ballon"+NB+"?", who:"À qui fais-tu la passe"+NB+"?", go:"Où vas-tu"+NB+"?"},
+  opt:{pass:"Je passe à mon coéquipier", go:"Je garde le ballon et je tire", back:"Je fais demi-tour", stay:"Je reste debout", slide:"Je tacle en glissant", pounce:"J'avance et je prends le ballon", run:"Je fonce vers l'avant avec le ballon", passback:"Je fais une passe en arrière", wait:"Je m'arrête et j'attends", shoot:"Je tire loin du gardien", dribble:"Je dribble sur le côté", press:"Je vais sur lui tout de suite", waitmate:"J'attends un coéquipier", runback:"Je reviens vers notre but", chase:"Je cours chercher le ballon tout de suite", home:"Je reviens entre le ballon et notre but", sulk:"Je m'arrête, les mains sur la tête", fwdpass:"Je lève la tête et je passe vers l'avant"},
   sit:{
    gk:{name:"Notre gardien a le ballon", looks:"Notre gardien tient le ballon.", todo:"Tu t'éloignes des joueurs rouges. Alors le gardien peut te passer le ballon.", hint:"Regarde"+NB+": qui a le ballon"+NB+"?"},
-   shadow:{name:"Un joueur rouge est entre toi et le ballon"}, free:{name:"Un coéquipier est libre"}, space:{name:"Tu as de l'espace devant toi"},
+   shadow:{name:"Un joueur rouge est entre toi et le ballon", looks:"Ton coéquipier a le ballon. Un joueur rouge est entre vous.", todo:"Tu te décales jusqu'à voir le ballon.", hint:"Regarde la ligne entre le ballon et toi. Y a-t-il un joueur rouge dessus"+NB+"?"},
+   free:{name:"Un coéquipier est libre", looks:"Tu as le ballon. Un joueur rouge est devant toi. Un coéquipier n'a personne près de lui.", todo:"Tu passes au coéquipier libre, même s'il est plus loin.", hint:"Regarde tes coéquipiers. Lequel n'a pas de joueur rouge près de lui"+NB+"?"},
+   space:{name:"Tu as de l'espace devant toi", looks:"Tu as le ballon. Personne n'est devant toi.", todo:"Tu fonces vers l'avant avec le ballon, dans l'herbe libre.", hint:"Regarde devant toi. Y a-t-il un joueur rouge"+NB+"?"},
    two1:{name:"Vous êtes deux contre un défenseur", looks:"Toi et un coéquipier attaquez. Il y a un seul défenseur.", todo:"Tu regardes le défenseur. Il vient sur toi"+NB+": tu passes. Il va vers ton coéquipier"+NB+": tu gardes le ballon.", hint:"Compte les joueurs près du ballon. Combien de noirs"+NB+"? Combien de rouges"+NB+"?"},
-   shot:{name:"Tu peux tirer"}, bunch:{name:"Tout le monde court au ballon"},
+   shot:{name:"Tu peux tirer", looks:"Tu as le ballon près de leur but. Personne n'est entre toi et le but.", todo:"Tu tires, au ras du sol et loin du gardien.", hint:"Regarde leur but. Est-il près"+NB+"? Quelqu'un est-il sur le chemin"+NB+"?"},
+   bunch:{name:"Tout le monde court au ballon", looks:"Ton coéquipier a le ballon. Beaucoup de joueurs des deux équipes sont autour de lui.", todo:"Tu t'éloignes du paquet, dans l'herbe libre. Alors ton coéquipier peut te passer le ballon.", hint:"Regarde autour du ballon. Combien de joueurs y a-t-il"+NB+"?"},
    coming:{name:"Leur joueur fonce vers notre but. Tu es loin.", looks:"Leur joueur a le ballon. Il fonce vers notre but. Tu es loin de lui.", todo:"Tu reviens en courant. Tu te places entre le ballon et notre but.", hint:"Regarde le joueur rouge avec le ballon. Où court-il"+NB+"? Es-tu près de lui"+NB+"?"},
-   freeopp:{name:"Leur joueur est seul près de notre but"}, squeeze:{name:"Le ballon est de l'autre côté"}, closest:{name:"Ils ont le ballon et tu es le plus près"},
+   freeopp:{name:"Leur joueur est seul près de notre but", looks:"Ils ont le ballon. Un de leurs joueurs attend seul près de notre but.", todo:"Tu vas vers lui. Tu te places sur la ligne entre le ballon et lui, pour que la passe ne lui arrive pas.", hint:"Regarde près de notre but. Un joueur rouge y est-il seul"+NB+"?"},
+   squeeze:{name:"Le ballon est de l'autre côté", looks:"Ils ont le ballon de l'autre côté. Tu es loin du ballon.", todo:"Tu te rapproches de tes coéquipiers, vers le milieu et un peu en arrière. Alors, il n'y a pas de trou.", hint:"Regarde où est le ballon. Est-il de ton côté ou de l'autre côté"+NB+"?"},
+   closest:{name:"Ils ont le ballon et tu es le plus près", looks:"Ils ont le ballon. Tu es le joueur le plus près de lui.", todo:"Tu vas sur lui tout de suite. Tes coéquipiers se placent derrière toi.", hint:"Regarde le joueur rouge avec le ballon. Quel joueur noir est le plus près de lui"+NB+"?"},
    onev1:{name:"Leur joueur arrive sur toi avec le ballon", looks:"Leur joueur a le ballon. Il est près de toi. C'est toi contre lui.", todo:"Tu restes debout. Tu tacles seulement s'il t'a dépassé et que tu peux toucher le ballon.", hint:"Regarde le joueur rouge avec le ballon. Est-il près de toi"+NB+"?"},
-   lost:{name:"On vient de perdre le ballon"}, won:{name:"On vient de récupérer le ballon"}
+   lost:{name:"On vient de perdre le ballon", looks:"Un joueur rouge vient de nous prendre le ballon.", todo:"Il est près"+NB+": tu cours chercher le ballon tout de suite. Il est loin"+NB+": tu reviens entre le ballon et notre but.", hint:"Suis la flèche blanche. Où est allé le ballon"+NB+"?"},
+   won:{name:"On vient de récupérer le ballon", looks:"Tu viens de leur prendre le ballon. Leurs joueurs sont encore mal placés.", todo:"Tu lèves la tête tout de suite. Tu passes vers l'avant à un coéquipier libre, ou tu cours avec le ballon si tu as de l'espace.", hint:"Suis la flèche blanche. Qui a le ballon maintenant"+NB+"?"}
   },
   whyName:{
    gk:{coming:"Notre gardien a le ballon. Leur joueur ne l'a pas.", lost:"Nous avons le ballon"+NB+": notre gardien le tient."},
    two1:{onev1:"Compte encore"+NB+": vous êtes deux près du ballon, et il y a un seul défenseur.", lost:"Tu as le ballon. Regarde le ballon à tes pieds."},
    coming:{onev1:"Leur joueur est loin de toi. Il ne court pas sur toi.", won:"Ils ont le ballon"+NB+": le joueur rouge l'a."},
-   onev1:{coming:"Leur joueur n'est pas loin de toi. Il est tout près de toi.", gk:"Notre gardien n'a pas le ballon. Le joueur rouge l'a."}
+   onev1:{coming:"Leur joueur n'est pas loin de toi. Il est tout près de toi.", gk:"Notre gardien n'a pas le ballon. Le joueur rouge l'a."},
+   shadow:{free:"Tu n'as pas le ballon. Ton coéquipier l'a.", coming:"Nous avons le ballon. Ton coéquipier l'a."},
+   free:{space:"Un joueur rouge est devant toi. Tu n'as pas d'espace devant toi.", lost:"Tu as encore le ballon. Regarde le ballon à tes pieds."},
+   space:{free:"Regarde devant toi"+NB+": il n'y a personne.", coming:"Nous avons le ballon. C'est toi qui l'as."},
+   shot:{space:"Regarde comme leur but est près.", gk:"Notre gardien n'a pas le ballon. C'est toi qui l'as."},
+   bunch:{shadow:"Regarde encore"+NB+": beaucoup de joueurs sont autour du ballon.", coming:"Nous avons le ballon. Ton coéquipier l'a."},
+   freeopp:{coming:"Le joueur près de notre but n'a pas le ballon. Il attend une passe.", won:"Ils ont le ballon. Un joueur rouge l'a."},
+   squeeze:{coming:"Leur joueur ne fonce pas vers notre but. Il a le ballon de l'autre côté.", won:"Ils ont le ballon. Un joueur rouge l'a."},
+   closest:{squeeze:"Le ballon est près de toi, de ton côté.", free:"Nous n'avons pas le ballon. Un joueur rouge l'a."},
+   lost:{won:"Regarde le ballon"+NB+": il est allé à un joueur rouge.", space:"Tu n'as plus le ballon. Un joueur rouge l'a."},
+   won:{lost:"Regarde le ballon"+NB+": il est arrivé chez toi.", coming:"Nous avons le ballon maintenant. C'est toi qui l'as."}
   },
   whyDec:{
    gk:{"wide|stay":"Un joueur rouge est entre toi et le gardien. La passe ne peut pas arriver.", "wide|far":"Un joueur rouge est sur le chemin de cette longue passe. Il peut prendre le ballon.",
@@ -312,7 +509,19 @@ var T = {
    coming:{"home|chase":"Tu cours derrière lui. Tu arrives trop tard pour l'arrêter.", "home|stay":"Tu restes loin. Personne ne l'arrête sur la route de notre but."},
    onev1:{"stay|slide":"Il a encore le ballon au pied. Si tu tacles, il te contourne.", "stay|pounce":"Le ballon est collé à son pied. Si tu te jettes, il te passe.",
           "slide|stay":"Il t'a déjà dépassé. Si tu cours seulement, il arrive le premier à notre but.", "slide|pounce":"Il t'a dépassé. Tu ne peux plus te mettre devant lui.",
-          "pounce|stay":"Le ballon est plus près de toi que de lui. Si tu attends, il le reprend.", "pounce|slide":"Le ballon est près de toi. Tu n'as pas besoin de tacler."}
+          "pounce|stay":"Le ballon est plus près de toi que de lui. Si tu attends, il le reprend.", "pounce|slide":"Le ballon est près de toi. Tu n'as pas besoin de tacler."},
+   shadow:{"side|stay":"Le joueur rouge est toujours entre toi et le ballon. La passe ne peut pas arriver.", "side|far":"Un autre joueur rouge est sur le chemin de la passe. Il peut prendre le ballon."},
+   free:{"free|near":"Un joueur rouge est sur le chemin de cette passe. Il peut prendre le ballon.", "free|far":"Cette longue passe passe près des joueurs rouges. Ils peuvent prendre le ballon."},
+   space:{"run|passback":"Tu as de l'herbe libre devant toi. Si tu passes en arrière, tu perds cet espace.", "run|wait":"Si tu attends, les joueurs rouges reviennent. L'espace se ferme."},
+   shot:{"shoot|pass":"Un joueur rouge est à côté de ton coéquipier. Il peut prendre la passe, et tu rates ta chance de marquer.", "shoot|dribble":"Si tu dribbles sur le côté, les joueurs rouges reviennent. Tu rates ta chance."},
+   bunch:{"space|stay":"Tu restes dans le paquet. Un joueur rouge peut garder deux d'entre vous, et personne ne peut te passer le ballon.", "space|ball":"Tu cours aussi vers le ballon. Maintenant, encore plus de joueurs sont autour du ballon."},
+   freeopp:{"cut|ball":"Tu cours vers le ballon. Leur joueur près de notre but reste seul, et la passe arrive.", "cut|stay":"Tu restes loin. Leur joueur près de notre but est seul, et la passe arrive."},
+   squeeze:{"in|stay":"Tu restes sur le côté, loin de ton équipe. Un joueur rouge peut courir dans le grand trou.", "in|ball":"Tu cours jusqu'au ballon. Ton côté est vide, et un joueur rouge peut y courir."},
+   closest:{"press|waitmate":"Tu es le plus près. Si tu attends, il a le temps de courir avec le ballon.", "press|runback":"Tu es le plus près. Si tu t'en vas, personne ne l'arrête."},
+   lost:{"chase|home":"Il est juste à côté de toi. Si tu reviens, il a le temps de lever la tête et de passer.", "chase|sulk":"Si tu t'arrêtes, il part avec le ballon.",
+         "home|chase":"Il est trop loin. Tu arrives trop tard, et personne ne protège notre but.", "home|sulk":"Si tu t'arrêtes, personne ne protège notre but."},
+   won:{"fwdpass|run":"Un joueur rouge est devant toi. Si tu cours, il reprend le ballon.", "fwdpass|passback":"Leurs joueurs sont mal placés maintenant. Si tu passes en arrière, ils ont le temps de revenir.",
+        "run|fwdpass":"Personne de ton équipe n'est devant toi. La passe ne va à personne.", "run|passback":"Tu as de l'herbe libre devant toi. Si tu passes en arrière, leurs joueurs ont le temps de revenir."}
   },
   ex:{
    gk1:"Tu as vu un joueur rouge entre toi et le gardien. Tu t'es écarté. Maintenant, personne ne bloque la passe.",
@@ -330,7 +539,47 @@ var T = {
    o1:"Tu as vu qu'il arrive sur toi avec le ballon au pied. Tu restes debout. Tu te mets de profil et tu le pousses sur le côté.",
    o2:"Tu as vu qu'il t'avait dépassé. Il a poussé le ballon devant lui. Tu peux toucher le ballon de côté, alors tu tacles le ballon.",
    o3:"Tu as vu que sa touche était trop longue. Le ballon est plus près de toi que de lui. Tu avances et tu le prends. Tu restes debout.",
-   o4:"Tu as vu qu'il est près de la ligne de touche avec le ballon au pied. Tu restes debout. Tu le gardes sur le côté, loin de notre but."
+   o4:"Tu as vu qu'il est près de la ligne de touche avec le ballon au pied. Tu restes debout. Tu le gardes sur le côté, loin de notre but.",
+   sh1:"Tu as vu un joueur rouge entre toi et ton coéquipier. Tu t'es décalé. Maintenant, tu vois le ballon.",
+   sh2:"Tu as vu que le joueur rouge te cachait. Tu t'es décalé. Maintenant, ton coéquipier te voit.",
+   sh3:"Tu as vu un joueur rouge sur la ligne entre toi et le ballon. Tu es sorti de cette ligne. Maintenant, la passe est libre.",
+   sh4:"Tu as vu un joueur rouge juste entre toi et le ballon. Tu t'es décalé. Maintenant, personne ne bloque la passe.",
+   f1:"Tu as vu un joueur rouge devant toi et un coéquipier libre sur le côté. Tu lui as passé le ballon. Personne ne peut le prendre.",
+   f2:"Tu as vu qu'un coéquipier n'avait personne près de lui. Tu lui as passé le ballon. La passe est sûre.",
+   f3:"Tu as vu que le coéquipier proche était marqué. Tu as passé au coéquipier libre, même s'il est plus loin.",
+   f4:"Tu as vu un joueur rouge à côté du coéquipier proche. Tu as choisi le coéquipier libre. Maintenant, ton équipe garde le ballon.",
+   sp1:"Tu as vu de l'herbe libre devant toi. Tu as foncé vers l'avant avec le ballon. Chaque pas te rapproche de leur but.",
+   sp2:"Tu as vu que personne n'était devant toi. Tu as foncé dans l'espace avec le ballon.",
+   sp3:"Tu as vu les joueurs rouges loin sur le côté. Tu as foncé vers l'avant avant qu'ils reviennent.",
+   sp4:"Tu as vu un grand espace libre devant toi. Tu as foncé vers l'avant avec le ballon, vite.",
+   s1:"Tu as vu leur but tout près, et personne sur le chemin. Tu as tiré au ras du sol, loin du gardien.",
+   s2:"Tu as vu un chemin libre vers le but. Le gardien était d'un côté, alors tu as tiré de l'autre côté.",
+   s3:"Tu as vu que tu étais tout près de leur but. Tu n'as pas attendu. Tu as tiré tout de suite.",
+   s4:"Tu as vu que personne n'était entre toi et le but. Tu as tiré loin du gardien.",
+   b1:"Tu as vu beaucoup de joueurs autour du ballon. Tu es sorti du paquet, dans l'herbe libre. Maintenant, ton coéquipier peut te passer le ballon.",
+   b2:"Tu as vu que tout le monde était près du ballon. Tu es allé sur le côté. Maintenant, ton équipe a plus d'espace.",
+   b3:"Tu as vu un paquet autour de ton coéquipier. Tu t'en es éloigné. Maintenant, il a une passe libre vers toi.",
+   b4:"Tu as vu trop de joueurs autour du ballon. Tu as couru vers l'herbe libre. Maintenant, ton coéquipier peut te passer le ballon.",
+   fo1:"Tu as vu un joueur rouge seul près de notre but. Tu t'es placé sur la ligne entre le ballon et lui. Maintenant, la passe ne peut pas lui arriver.",
+   fo2:"Tu as vu leur joueur attendre près de notre but. Tu t'es mis sur le chemin de la passe. Maintenant, il ne peut pas avoir le ballon.",
+   fo3:"Tu as vu un joueur rouge sans personne près de lui, tout près de notre but. Tu es allé vers lui et tu as bloqué la passe.",
+   fo4:"Tu as vu leur joueur seul devant notre but. Tu t'es placé entre le ballon et lui. Maintenant, notre but est protégé.",
+   sq1:"Tu as vu le ballon de l'autre côté. Tu t'es rapproché de tes coéquipiers. Maintenant, il n'y a pas de trou pour leurs joueurs.",
+   sq2:"Tu as vu que le ballon était loin de toi. Tu es venu vers le milieu. Maintenant, ton équipe est bien serrée.",
+   sq3:"Tu as vu qu'ils attaquaient de l'autre côté. Tu t'es rapproché, un peu en arrière. Maintenant, personne ne peut courir derrière ton équipe.",
+   sq4:"Tu as vu le ballon loin, de l'autre côté. Tu t'es rapproché de ton équipe. Maintenant, le trou est fermé.",
+   cl1:"Tu as vu que tu étais le plus près de leur joueur. Tu es allé sur lui tout de suite. Maintenant, il n'a pas le temps.",
+   cl2:"Tu as vu leur joueur avec le ballon, et tu étais le plus près. Tu es allé sur lui tout de suite. Tes coéquipiers se sont placés derrière toi.",
+   cl3:"Tu as vu que personne n'était plus près du ballon que toi. Tu es allé sur lui tout de suite, pour qu'il ne puisse pas avancer.",
+   cl4:"Tu as vu leur joueur juste devant toi. Tu étais le plus près, alors tu es allé sur lui tout de suite.",
+   lo1:"Tu as vu un joueur rouge prendre le ballon juste à côté de toi. Tu l'as pressé tout de suite. Il n'a pas eu le temps de lever la tête.",
+   lo2:"Tu as vu qu'on a perdu le ballon loin de toi. Tu es revenu entre le ballon et notre but.",
+   lo3:"Tu as vu qu'on a perdu le ballon près de toi. Tu es allé le chercher tout de suite, avant qu'il s'échappe.",
+   lo4:"Tu as vu que le ballon était perdu de l'autre côté du terrain. Tu étais trop loin pour le presser, alors tu es revenu protéger notre but.",
+   w1:"Tu as vu que tu venais de récupérer le ballon, et qu'un coéquipier était libre devant. Tu as levé la tête et tu as passé vite vers l'avant.",
+   w2:"Tu as vu un joueur rouge devant toi, et un coéquipier libre loin devant. Tu as levé la tête et tu lui as passé le ballon tout de suite.",
+   w3:"Tu as vu que leurs joueurs étaient encore mal placés. Tu as levé la tête tout de suite et tu as passé à ton coéquipier libre devant.",
+   w4:"Tu as vu que tu venais de récupérer le ballon, avec de l'herbe libre devant toi. Tu as foncé vers l'avant avant que leurs joueurs reviennent."
   }
  }
 };
@@ -343,8 +592,8 @@ var FAST = /[?&]fast=1/.test(location.search);
 var REDUCE = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 var W = 370, GOAL = [185,544];
 var KEY = "vdj:v1";
-var store = {lang:"fr", voice:true, counts:{}, won:false};
-try{ var raw=localStorage.getItem(KEY); if(raw){ var s0=JSON.parse(raw); if(s0){ store.lang=s0.lang==="en"?"en":"fr"; store.voice=s0.voice!==false; store.counts=s0.counts||{}; store.won=!!s0.won; } } }catch(e){}
+var store = {lang:"fr", voice:true, counts:{}, won:false, ms:{}};
+try{ var raw=localStorage.getItem(KEY); if(raw){ var s0=JSON.parse(raw); if(s0){ store.lang=s0.lang==="en"?"en":"fr"; store.voice=s0.voice!==false; store.counts=s0.counts||{}; store.won=!!s0.won; store.ms=s0.ms||{}; } } }catch(e){}
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
 function t(){ return T[store.lang]; }
 var app = document.getElementById("app");
@@ -366,6 +615,8 @@ function mirrorPic(p){
   (c.clue||[]).forEach(m);
   if(c.dec.spots) Object.keys(c.dec.spots).forEach(function(k){ m(c.dec.spots[k]); });
   if(c.dec.t==="btn") Object.keys(c.dec.out).forEach(function(k){ c.dec.out[k].forEach(function(a){ a[0]=W-a[0]; a[2]=W-a[2]; }); });
+  if(c.dec.target) m(c.dec.target);
+  if(c.dec.arr) Object.keys(c.dec.arr).forEach(function(k){ c.dec.arr[k].forEach(function(a){ a[0]=W-a[0]; a[2]=W-a[2]; }); });
   c.mirrored=true; return c;
 }
 function starsOf(n){ return n>=STARS_AT[2]?3:(n>=STARS_AT[1]?2:(n>=STARS_AT[0]?1:0)); }
@@ -472,12 +723,44 @@ function nextPic(){
   var S=R.s, p=cur(); if(!S || S.step!=="result" || S.locked) return;
   stopSpeech();
   R.res.push({sit:p.sit, id:p.id, name:S.nameFirst===true, dec:S.decFirst===true});
-  if(S.nameFirst===true){ store.counts[p.sit]=(store.counts[p.sit]||0)+1; save(); }
+  /* a success counts only when both steps (See and Decide) were right on the first try */
+  if(S.nameFirst===true && S.decFirst===true){
+    var before=starsOf(store.counts[p.sit]||0);
+    store.counts[p.sit]=(store.counts[p.sit]||0)+1; save();
+    if(starsOf(store.counts[p.sit])>before) R.toast=t().newStar+" "+t().sit[p.sit].name;
+  }
   R.i++;
   if(R.i<R.items.length){ startPic(); return; }
   R.s=null;
-  if(allDone() && !store.won){ store.won=true; save(); screen="win"; } else screen="end";
+  if(allDone() && !store.won){ store.won=true; checkMilestones(); save(); screen="win"; }
+  else { R.ms=checkMilestones(); save(); screen = R.ms.length ? "milestone" : "end"; }
   render(); window.scrollTo(0,0);
+}
+
+/* ---------- milestones: a situation at 3 stars, every situation at 1 star, half the stars, every situation at 2 stars ---------- */
+function checkMilestones(){
+  var got=[], ms=store.ms, all=function(n){ return SITS.every(function(k){ return starsOf(store.counts[k]||0)>=n; }); };
+  SITS.forEach(function(k){ if(starsOf(store.counts[k]||0)===3 && !ms["sit3:"+k]){ ms["sit3:"+k]=1; got.push({icon:"🏅", text:t().ms.sit3(t().sit[k].name)}); } });
+  if(all(1) && !ms.all1){ ms.all1=1; got.push({icon:"🌟", text:t().ms.all1}); }
+  if(totalStars()>=Math.ceil(SITS.length*3/2) && !ms.half){ ms.half=1; got.push({icon:"🎉", text:t().ms.half}); }
+  if(all(2) && !ms.all2){ ms.all2=1; got.push({icon:"💫", text:t().ms.all2}); }
+  return got;
+}
+function renderMilestone(){
+  var box=h("section",{"class":"win"});
+  box.appendChild(h("div",{"class":"trophy"},R.ms[0].icon));
+  box.appendChild(h("h1",{},esc(t().ms.title)));
+  var ul=h("ul",{"class":"mslist"}); R.ms.forEach(function(m){ ul.appendChild(h("li",{},m.icon+" "+esc(m.text))); }); box.appendChild(ul);
+  box.appendChild(h("p",{"class":"small"},esc(t().starsTotal(totalStars(), SITS.length*3))));
+  var balls=h("div",{"class":"rain","aria-hidden":"true"}); for(var i=0;i<8;i++) balls.appendChild(h("span",{style:"left:"+(i*12+Math.random()*6).toFixed(1)+"%;animation-delay:"+(Math.random()*2).toFixed(2)+"s"},BALL(28,"bb")));
+  box.appendChild(balls);
+  box.appendChild(h("button",{"class":"big",id:"msCont",onclick:function(){ stopSpeech(); screen="end"; render(); window.scrollTo(0,0); }},esc(t().cont)));
+  app.appendChild(box); startFireworks();
+  speak(t().ms.title+" "+R.ms.map(function(m){ return m.text; }).join(" "));
+}
+function showToast(text){
+  var el2=h("div",{"class":"toast",role:"status"},"⭐ "+esc(text)); document.body.appendChild(el2);
+  setTimeout(function(){ el2.classList.add("out"); }, FAST?50:2400); setTimeout(function(){ el2.remove(); }, FAST?100:3000);
 }
 
 /* ---------- little celebration: footballs fly up ---------- */
@@ -503,6 +786,14 @@ function cross(g, q){
   var s=6, d="M"+(q[0]-s)+" "+(q[1]-s)+"L"+(q[0]+s)+" "+(q[1]+s)+"M"+(q[0]+s)+" "+(q[1]-s)+"L"+(q[0]-s)+" "+(q[1]+s);
   el("path",{d:d,stroke:"#15301F","stroke-width":7,"stroke-linecap":"round"},g); el("path",{d:d,stroke:"#fff","stroke-width":3.5,"stroke-linecap":"round"},g);
 }
+function convexHull(pts){
+  var P=pts.slice().sort(function(a,b){ return a[0]-b[0] || a[1]-b[1]; });
+  if(P.length<3) return P;
+  var cr=function(o,a,b){ return (a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]); }, lo=[], up=[];
+  P.forEach(function(p){ while(lo.length>=2 && cr(lo[lo.length-2],lo[lo.length-1],p)<=0) lo.pop(); lo.push(p); });
+  P.slice().reverse().forEach(function(p){ while(up.length>=2 && cr(up[up.length-2],up[up.length-1],p)<=0) up.pop(); up.push(p); });
+  up.pop(); lo.pop(); return lo.concat(up);
+}
 function label(g, x, y, text, anchor){ var tx=el("text",{x:x,y:y,"text-anchor":anchor||"start","font-size":"12","font-weight":"700",fill:"#fff",stroke:"rgba(0,0,0,.4)","stroke-width":"3","paint-order":"stroke"},g); tx.textContent=text; return tx; }
 function blockerOf(p, to){ var best=null; p.them.forEach(function(o){ if(dist(o,p.ball)<14) return; var s=seg(p.ball,to,o); if(s.d<18 && (!best || s.u<best.u)) best={q:s.q, u:s.u}; }); return best; }
 
@@ -510,11 +801,23 @@ function blockerOf(p, to){ var best=null; p.them.forEach(function(o){ if(dist(o,
 function drawOutcome(over, marks, p, k, good){
   if(p.dec.t==="spot"){
     var ch=p.dec.spots[k];
-    if(dist(p.m,ch)>14) arrow(over,[p.m[0],p.m[1],ch[0],ch[1]],"k","full",true);
-    if(p.dec.out==="pass"){
+    if(p.dec.out!=="give" && dist(p.m,ch)>14) arrow(over,[p.m[0],p.m[1],ch[0],ch[1]],"k","full",true);
+    if(p.dec.out==="pass" || p.dec.out==="give"){
       var b=blockerOf(p,ch);
       arrow(over,[p.ball[0],p.ball[1],ch[0],ch[1]], b?"x":"y","full", !!b);
       if(b) cross(marks,b.q);
+    } else if(p.dec.out==="cut"){
+      var tg=p.dec.target, sc=seg(p.ball,tg,ch);
+      if(good){ arrow(over,[p.ball[0],p.ball[1],tg[0],tg[1]],"x","full",true); cross(marks,sc.q); }
+      else { arrow(over,[p.ball[0],p.ball[1],tg[0],tg[1]],"x","full"); arrow(over,[tg[0],tg[1],GOAL[0],GOAL[1]-6],"x","full"); }
+    } else if(p.dec.out==="shape"){
+      var pts=p.us.filter(function(u){ return !u[2]; }).map(function(u){ return [u[0],u[1]]; }); pts.push(ch);
+      var hull=convexHull(pts), ps=hull.map(function(q){ return q[0].toFixed(1)+","+q[1].toFixed(1); }).join(" ");
+      if(hull.length>2) el("polygon",{points:ps,fill:good?"rgba(255,228,92,.26)":"none",stroke:good?"#FFE45C":"#FF4D3D","stroke-width":3,"stroke-dasharray":good?"none":"7 6","stroke-linejoin":"round"},over);
+      if(!good && p.dec.arr && p.dec.arr[k]) p.dec.arr[k].forEach(function(a){ arrow(over,a,"x","full"); });
+    } else if(p.dec.out==="crowd"){
+      if(good) arrow(over,[p.ball[0],p.ball[1],ch[0],ch[1]],"y","full");
+      else el("circle",{cx:p.ball[0],cy:p.ball[1],r:58,fill:"rgba(255,77,61,.12)",stroke:"#FF4D3D","stroke-width":3,"stroke-dasharray":"8 6"},over);
     } else {
       el("line",{x1:p.ball[0],y1:p.ball[1],x2:GOAL[0],y2:GOAL[1],stroke:"#FF4D3D","stroke-width":4,"stroke-dasharray":"8 7","stroke-linecap":"round",opacity:".95"},over);
     }
@@ -532,11 +835,14 @@ function drawPitch(p, S, interactive){
   el("rect",{x:6,y:6,width:358,height:538},mk); el("line",{x1:6,y1:275,x2:364,y2:275},mk); el("circle",{cx:185,cy:275,r:50},mk);
   el("rect",{x:102,y:6,width:166,height:90},mk); el("rect",{x:102,y:454,width:166,height:90},mk);
   el("rect",{x:166,y:-2,width:38,height:8,fill:"rgba(255,255,255,.4)"},mk); el("rect",{x:166,y:544,width:38,height:8,fill:"rgba(255,255,255,.4)"},mk);
-  if(y0<=10) label(svg, 212, 21, t().theirGoal);
-  if(y0+300>=540) label(svg, 212, 539, t().ourGoal);
+  /* keeper labels go on the keeper's outer side; the goal label takes the other side, so neither covers the goal mouth */
+  var kRight=function(q){ return q[0]>300 ? false : (q[0]<70 ? true : q[0]>=190); };
+  var tk=p.them.filter(function(q){ return q[2]; })[0], ok_=p.us.filter(function(q){ return q[2]; })[0];
+  if(y0<=10){ if(tk && kRight(tk)) label(svg, 158, 21, t().theirGoal, "end"); else label(svg, 212, 21, t().theirGoal); }
+  if(y0+300>=540){ if(ok_ && kRight(ok_)) label(svg, 158, 539, t().ourGoal, "end"); else label(svg, 212, 539, t().ourGoal); }
 
   var step=S?S.step:"named", res=step==="result", over=el("g",{},svg), marks=el("g",{});
-  var mpos=p.m.slice(); if(res && p.dec.t==="spot") mpos=p.dec.spots[p.dec.ok].slice();
+  var mpos=p.m.slice(); if(res && p.dec.t==="spot" && p.dec.out!=="give") mpos=p.dec.spots[p.dec.ok].slice();
   if(res) drawOutcome(over, marks, p, p.dec.ok, true);
   else if(step==="decide" && S.lastWrong) drawOutcome(over, marks, p, S.lastWrong, false);
 
@@ -552,8 +858,9 @@ function drawPitch(p, S, interactive){
 
   var pg=el("g",{},svg);
   function body(q, fill){ el("circle",{cx:q[0],cy:q[1],r:11,fill:fill,stroke:"#fff","stroke-width":3},pg); }
-  p.us.forEach(function(q){ body(q,"#000"); if(q[2]) label(pg, q[0]<70?q[0]+17:q[0]-17, q[1]+4.5, t().keeper, q[0]<70?"start":"end"); });
-  p.them.forEach(function(q){ body(q,"#E53935"); if(q[2]) label(pg, q[0]<70?q[0]+17:q[0]-17, q[1]+4.5, t().keeper, q[0]<70?"start":"end"); });
+  var kl=function(q){ var r=kRight(q); label(pg, r?q[0]+17:q[0]-17, q[1]+4.5, t().keeper, r?"start":"end"); };
+  p.us.forEach(function(q){ body(q,"#000"); if(q[2]) kl(q); });
+  p.them.forEach(function(q){ body(q,"#E53935"); if(q[2]) kl(q); });
   var mg=el("g",{transform:"translate("+mpos[0]+" "+mpos[1]+")"},pg);
   el("circle",{r:16,fill:"none",stroke:"#FFD23F","stroke-width":3.5},mg);
   el("circle",{r:11,fill:"#000",stroke:"#fff","stroke-width":3},mg);
@@ -637,6 +944,7 @@ function openDetail(k){
 }
 function renderPlay(){
   var S=R.s, p=cur();
+  if(R.toast){ showToast(R.toast); R.toast=null; }
   var bar=h("div",{"class":"bar"});
   bar.appendChild(h("button",{"class":"back",onclick:goHome},"‹ "+esc(t().home)));
   var dots=h("div",{"class":"dots","aria-hidden":"true"});
@@ -682,10 +990,10 @@ function renderPlay(){
   }
 }
 function renderEnd(){
-  var n=R.res.filter(function(r){ return r.name; }).length, box=h("section",{"class":"end"});
+  var n=R.res.filter(function(r){ return r.name && r.dec; }).length, box=h("section",{"class":"end"});
   box.appendChild(h("h1",{},"🏁 "+esc(t().roundDone)));
   box.appendChild(h("p",{},esc(t().score(n,R.res.length))));
-  var ul=h("ul"); R.res.forEach(function(r){ ul.appendChild(h("li",{},(r.name?"⭐ ":"➖ ")+ICON[r.sit]+" "+esc(t().sit[r.sit].name))); }); box.appendChild(ul);
+  var ul=h("ul"); R.res.forEach(function(r){ ul.appendChild(h("li",{},(r.name&&r.dec?"⭐ ":"➖ ")+ICON[r.sit]+" "+esc(t().sit[r.sit].name))); }); box.appendChild(ul);
   var seen={}, names=[]; R.res.forEach(function(r){ if(!seen[r.sit]){ seen[r.sit]=1; names.push(ICON[r.sit]+" "+t().sit[r.sit].name); } });
   box.appendChild(h("div",{"class":"mission"},"<p><b>⚽ "+esc(t().playw)+"</b></p><p>"+esc(t().mission)+"</p><p>"+names.map(esc).join("<br>")+"</p>"));
   var row=h("div",{"class":"row"});
@@ -727,12 +1035,13 @@ function renderWin(){
 }
 function render(){
   document.documentElement.lang=store.lang; document.title="VDJ";
-  if(screen!=="win") stopFireworks();
+  if(screen!=="win" && screen!=="milestone") stopFireworks();
   app.innerHTML=""; app.appendChild(header());
   if(screen==="home") renderHome();
   else if(screen==="play" && R && R.s) renderPlay();
   else if(screen==="end" && R) renderEnd();
   else if(screen==="win") renderWin();
+  else if(screen==="milestone" && R && R.ms) renderMilestone();
   else { screen="home"; renderHome(); }
 }
 render();
@@ -743,7 +1052,7 @@ if("serviceWorker" in navigator && /github\.io$|^localhost$|^127\./.test(locatio
 window.VDJ={ get R(){ return R; }, get screen(){ return screen; }, store:store, PICS:PICS, mirrorPic:mirrorPic,
   pickName:pickName, pickDec:pickDec, next:nextPic, newRound:newRound, totalStars:totalStars,
   forceRound:function(ids, mirror){ buildRound(ids.map(function(id){ var p=PICS.filter(function(q){ return q.id===id; })[0]; return mirror?mirrorPic(p):clone(p); })); },
-  previewWin:function(){ screen="win"; render(); } };
+  previewWin:function(){ screen="win"; render(); }, checkMilestones:checkMilestones };
 })();
 
 </script>
